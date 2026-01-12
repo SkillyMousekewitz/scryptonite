@@ -36,15 +36,15 @@ body {
 body.focus-mode #left-sidebar { margin-left: calc(var(--sidebar-width) * -1); }
 body.focus-mode #right-sidebar { margin-right: calc(var(--right-width) * -1); }
 
-/* THE PHYSICAL SHEET OF PAPER (CRITICAL FIX) */
+/* CHANGE THIS: Use a dot (.) for Class, not a hash (#) for ID */
 .paper-page { 
     display: block !important;
     width: 8.5in !important; 
     height: 11in !important; 
     min-height: 11in !important;
-    background-color: white !important; /* This makes it visible */
+    background-color: white !important; /* Forces the paper to appear */
     margin: 0 auto 30px auto !important; 
-    padding: 1in 1in 1in 1.5in !important; 
+    padding: 1in 1in 1in 1.5in !important; /* Enforces the 1.5" left margin */
     box-shadow: 0 0 40px rgba(0,0,0,0.5) !important; 
     font-family: 'Courier Prime', Courier, monospace !important; 
     font-size: 12pt !important; 
