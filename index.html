@@ -24,7 +24,7 @@
         body.dark-mode {
             --bg-main: #0f1111;
             --bg-sidebar: #000000;
-            --bg-editor: #ffffff; /* Keep paper white even in dark mode for contrast */
+            --bg-editor: #ffffff; 
             --text-main: #dfe6e9;
             --text-sidebar: #636e72;
             --page-break-color: #dcdcdc;
@@ -46,25 +46,28 @@
         #main-editor { 
             flex-grow: 1; flex-shrink: 1; min-width: 0; 
             overflow-y: auto; display: flex; flex-direction: column; align-items: center; 
-            padding: 40px 0; /* Vertical padding only */
+            padding: 40px 0; 
         }
 
-        /* THE PAPER ENGINE */
+        /* THE PAPER ENGINE: FIXING THE LEAK */
         #script-container { 
             width: 8.5in; 
             min-height: 11in; 
-            height: auto; /* Allow the paper to grow with content */
+            height: auto !important; /* Forces the paper to grow with text */
+            display: block;
             background-color: white; 
-            /* This creates the repeating page break line every 11 inches */
             background-image: linear-gradient(to bottom, transparent 10.99in, var(--page-break-color) 11in);
             background-size: 100% 11in;
+            background-repeat: repeat-y;
             padding: 1in 1in 1in 1.5in; 
-            box-shadow: 0 0 20px rgba(0,0,0,0.2); 
+            box-shadow: 0 0 30px rgba(0,0,0,0.15); 
             font-family: 'Courier Prime', Courier, monospace; 
             font-size: 12pt; 
             line-height: 1.2; 
             outline: none;
-            color: #000; /* Standard script text is black */
+            color: #000;
+            margin-bottom: 300px; /* Buffer at the bottom */
+            box-sizing: border-box;
         }
 
         /* SCREENPLAY ELEMENTS */
@@ -77,7 +80,7 @@
         .transition { text-transform: uppercase; margin-left: 4.5in; margin-top: 12px; }
         .script-note { background: rgba(253, 250, 114, 0.4); color: #000; padding: 10px; margin: 10px 0; border-left: 4px solid #f1c40f; font-family: sans-serif; font-size: 0.85rem; font-style: italic; }
 
-        /* MODES & OVERLAYS */
+        /* OVERLAYS */
         body.focus-mode #left-sidebar { margin-left: calc(var(--sidebar-width) * -1); }
         body.focus-mode #right-sidebar { margin-right: calc(var(--right-width) * -1); }
         
@@ -320,11 +323,10 @@
 
         function updateStats() {
             const words = container.innerText.trim().split(/\s+/).length;
-            // 1056 pixels is roughly 11 inches on most standard browsers
             const pages = Math.max(1, Math.ceil(container.scrollHeight / 1056)); 
             document.getElementById('stat-pages').innerText = pages;
             document.getElementById('stat-words').innerText = words;
-            document.getElementById('stat-time').innerText = `${pages}m 00s`;
+            document.getElementById('stat-time').innerText = `${Math.floor(pages)}m ${Math.round((pages % 1) * 60)}s`;
         }
 
         window.exportToPDF = () => {
