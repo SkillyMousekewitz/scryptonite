@@ -28,7 +28,6 @@
             --text-sidebar: #636e72;
         }
 
-        /* LAYOUT FIX: Flexbox Row ensures side-by-side positioning */
         body { 
             margin: 0; 
             display: flex; 
@@ -49,12 +48,11 @@
             padding: 20px; 
             z-index: 100; 
             transition: 0.3s ease;
-            flex-shrink: 0; /* Prevents sidebars from squishing */
+            flex-shrink: 0;
         }
         #left-sidebar { width: var(--sidebar-width); border-right: 1px solid #2d3436; }
         #right-sidebar { width: var(--right-width); border-left: 1px solid #2d3436; }
 
-        /* EDITOR FIX: flex-shrink and min-width allow the middle to yield space */
         #main-editor { 
             flex-grow: 1; 
             flex-shrink: 1; 
@@ -140,13 +138,10 @@
     <div id="left-sidebar">
         <h6 class="mb-3" style="letter-spacing: 2px; color: #555;">SCENES</h6>
         <div id="scene-list" class="flex-grow-1 overflow-auto mb-3"></div>
-        
-        <h6 class="mb-2" style="letter-spacing: 2px; color: #555;">STATS</h6>
         <div class="mb-4 small">
             <div>Words: <span id="stat-words">0</span></div>
             <div>Runtime: <span id="stat-time">0m 0s</span></div>
         </div>
-
         <div class="d-grid gap-2 mb-4">
             <button class="btn btn-outline-secondary btn-sm" onclick="toggleDarkMode()">Theme</button>
             <button class="btn btn-outline-secondary btn-sm" onclick="toggleFocusMode()">Focus Mode</button>
@@ -169,19 +164,8 @@
             <button id="btn-beats" class="btn btn-sm btn-info" onclick="switchTab('beats')">BEATS</button>
             <button id="btn-chars" class="btn btn-sm btn-outline-info" onclick="switchTab('chars')">CHARS</button>
         </div>
-
-        <div id="tab-beats">
-            <div id="beat-container" contenteditable="true" class="story-box">
-                <b>STORY BEATS:</b><br>• 
-            </div>
-        </div>
-
-        <div id="tab-chars" style="display:none;">
-            <div id="char-container" contenteditable="true" class="story-box">
-                <b>CHARACTERS:</b><br>• 
-            </div>
-        </div>
-        <div class="mt-3 small text-muted text-center italic">Auto-Synced to Cloud</div>
+        <div id="tab-beats"><div id="beat-container" contenteditable="true" class="story-box"><b>STORY BEATS:</b><br>• </div></div>
+        <div id="tab-chars" style="display:none;"><div id="char-container" contenteditable="true" class="story-box"><b>CHARACTERS:</b><br>• </div></div>
     </div>
 
     <script type="module">
@@ -210,7 +194,6 @@
         const charsBox = document.getElementById('char-container');
         const elements = ["scene-heading", "action", "character", "parenthetical", "dialogue", "transition"];
 
-        // --- AUTH ---
         document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
         window.signOutUser = () => signOut(auth);
 
@@ -224,7 +207,58 @@
             }
         });
 
-        // --- UI LOGIC ---
+        // --- GLOBAL KEYDOWN LISTENER ---
+        document.addEventListener('keydown', (e) => {
+            // Global Shortcuts
+            if (e.ctrlKey && (e.key === '/' || e.code === 'Slash')) { e.preventDefault(); toggleLegend(); return; }
+            if (e.ctrlKey && e.key === '\\') { e.preventDefault(); toggleFocusMode(); return; }
+            
+            // Only capture Tab/Enter/Notes if focus is inside the script container
+            if (!container.contains(document.activeElement)) return;
+
+            const sel = window.getSelection();
+            const line = sel.anchorNode?.parentElement?.closest('.line');
+            
+            if (e.key === 'Tab') {
+                e.preventDefault(); // Stop browser from jumping focus
+                if (!line) return;
+                let idx = elements.indexOf(line.dataset.type);
+                idx = e.shiftKey ? (idx - 1 + elements.length) % elements.length : (idx + 1) % elements.length;
+                line.className = `line ${elements[idx]}`;
+                line.dataset.type = elements[idx];
+                updateNavigator();
+            }
+
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (!line) return;
+                const type = line.dataset.type;
+                const nextType = { "character": "dialogue", "scene-heading": "action", "dialogue": "action", "parenthetical": "dialogue" }[type] || "action";
+                const newLine = document.createElement('div');
+                newLine.className = `line ${nextType}`;
+                newLine.dataset.type = nextType;
+                newLine.innerHTML = "<br>"; 
+                line.after(newLine);
+                const range = document.createRange();
+                range.setStart(newLine, 0);
+                range.collapse(true);
+                sel.removeAllRanges(); sel.addRange(range);
+            }
+
+            if (e.ctrlKey && e.shiftKey && e.key === 'N') {
+                e.preventDefault();
+                if (line) insertNote(line);
+            }
+        });
+
+        [container, beatsBox, charsBox].forEach(box => {
+            box.addEventListener('input', () => {
+                if (box === container) autoCapitalize();
+                updateStats();
+                saveToCloud();
+            });
+        });
+
         window.switchTab = (tab) => {
             document.getElementById('tab-beats').style.display = tab === 'beats' ? 'block' : 'none';
             document.getElementById('tab-chars').style.display = tab === 'chars' ? 'block' : 'none';
@@ -240,51 +274,6 @@
         window.toggleDarkMode = () => document.body.classList.toggle('dark-mode');
         window.toggleFocusMode = () => document.body.classList.toggle('focus-mode');
 
-        // --- KEYBOARD ENGINE ---
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && (e.key === '/' || e.code === 'Slash')) { e.preventDefault(); toggleLegend(); return; }
-            if (e.ctrlKey && e.key === '\\') { e.preventDefault(); toggleFocusMode(); return; }
-            
-            const sel = window.getSelection();
-            const line = sel.anchorNode?.parentElement?.closest('.line');
-            if (!line) return;
-
-            if (e.key === 'Tab') {
-                e.preventDefault();
-                let idx = elements.indexOf(line.dataset.type);
-                idx = e.shiftKey ? (idx - 1 + elements.length) % elements.length : (idx + 1) % elements.length;
-                line.className = `line ${elements[idx]}`;
-                line.dataset.type = elements[idx];
-                updateNavigator();
-            }
-
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                const type = line.dataset.type;
-                const nextType = { "character": "dialogue", "scene-heading": "action", "dialogue": "action", "parenthetical": "dialogue" }[type] || "action";
-                const newLine = document.createElement('div');
-                newLine.className = `line ${nextType}`;
-                newLine.dataset.type = nextType;
-                newLine.innerHTML = "<br>"; 
-                line.after(newLine);
-                const range = document.createRange();
-                range.setStart(newLine, 0);
-                range.collapse(true);
-                sel.removeAllRanges(); sel.addRange(range);
-            }
-
-            if (e.ctrlKey && e.shiftKey && e.key === 'N') insertNote(line);
-        });
-
-        [container, beatsBox, charsBox].forEach(box => {
-            box.addEventListener('input', () => {
-                if (box === container) autoCapitalize();
-                updateStats();
-                saveToCloud();
-            });
-        });
-
-        // --- DATABASE SYNC ---
         async function saveToCloud() {
             if (currentUser) {
                 await setDoc(doc(db, "scripts", currentUser.uid), {
@@ -310,7 +299,6 @@
             });
         }
 
-        // --- HELPERS ---
         function autoCapitalize() {
             const sel = window.getSelection();
             const line = sel.anchorNode?.parentElement?.closest('.line');
