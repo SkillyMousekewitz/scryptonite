@@ -16,37 +16,46 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 const editor = document.getElementById('main-editor');
+const elements = ["scene-heading", "action", "character", "parenthetical", "dialogue", "transition"];
 let currentUser = null;
 
 // --- PAGE FACTORY ---
 function checkPageOverflow(currentPage) {
-    const PAGE_LIMIT = 960; 
+    const PAGE_LIMIT = 960; // Approximate 11 inches in pixels
     if (currentPage.scrollHeight > PAGE_LIMIT) {
-        let nextP = document.createElement('div');
-        nextP.className = 'paper-page';
-        nextP.contentEditable = true;
-        currentPage.after(nextP);
+        let nextP = currentPage.nextElementSibling;
+        if (!nextP || !nextP.classList.contains('paper-page')) {
+            nextP = document.createElement('div');
+            nextP.className = 'paper-page';
+            nextP.contentEditable = true;
+            currentPage.after(nextP);
+        }
         nextP.prepend(currentPage.lastElementChild);
         return nextP;
     }
     return null;
 }
 
-// --- GLOBAL HANDLERS ---
+// --- UI HELPERS ---
 window.toggleLegend = () => {
     const leg = document.getElementById('legend-overlay');
     leg.style.display = (leg.style.display === 'flex') ? 'none' : 'flex';
 };
 window.toggleFocusMode = () => document.body.classList.toggle('focus-mode');
 
+// --- AUTH & SYNC ---
 onAuthStateChanged(auth, (user) => {
     if (user) {
         currentUser = user;
         document.getElementById('auth-overlay').style.display = 'none';
         onSnapshot(doc(db, "scripts", user.uid), (snap) => {
             if (snap.exists() && !editor.contains(document.activeElement)) {
-                editor.innerHTML = snap.data().content || editor.innerHTML;
+                const data = snap.data();
+                editor.innerHTML = data.content || '<div class="paper-page" contenteditable="true"><div class="line scene-heading" data-type="scene-heading">INT. NEW PROJECT - DAY</div></div>';
+                document.getElementById('beat-container').innerHTML = data.beats || "<b>BEAT SHEET:</b>";
+                document.getElementById('char-container').innerHTML = data.chars || "<b>CHARACTERS:</b>";
                 updateStats();
+                updateNavigator();
             }
         });
     } else {
@@ -54,6 +63,7 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
+// --- KEYBOARD ---
 document.addEventListener('keydown', (e) => {
     const sel = window.getSelection();
     const line = sel.anchorNode?.parentElement?.closest('.line');
@@ -64,11 +74,21 @@ document.addEventListener('keydown', (e) => {
 
     if (!line || !currentPage) return;
 
+    if (e.key === 'Tab') {
+        e.preventDefault();
+        let idx = (elements.indexOf(line.dataset.type) + (e.shiftKey ? -1 : 1) + elements.length) % elements.length;
+        line.className = `line ${elements[idx]}`;
+        line.dataset.type = elements[idx];
+        updateNavigator();
+    }
+
     if (e.key === 'Enter') {
         e.preventDefault();
+        const nextType = { "character": "dialogue", "scene-heading": "action", "dialogue": "action" }[line.dataset.type] || "action";
         const newLine = document.createElement('div');
-        newLine.className = 'line action';
-        newLine.innerHTML = '&#8203;';
+        newLine.className = `line ${nextType}`;
+        newLine.dataset.type = nextType;
+        newLine.innerHTML = "&#8203;";
         line.after(newLine);
         const range = document.createRange();
         range.setStart(newLine.firstChild, 0);
@@ -80,7 +100,35 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// Button Bindings
+// --- DATA ---
+async function saveToCloud() {
+    if (currentUser) {
+        await setDoc(doc(db, "scripts", currentUser.uid), {
+            content: editor.innerHTML,
+            beats: document.getElementById('beat-container').innerHTML,
+            chars: document.getElementById('char-container').innerHTML
+        }, { merge: true });
+    }
+}
+
+function updateStats() {
+    document.getElementById('stat-pages').innerText = document.querySelectorAll('.paper-page').length;
+    document.getElementById('stat-words').innerText = editor.innerText.trim().split(/\s+/).filter(w => w.length > 0).length;
+}
+
+function updateNavigator() {
+    const list = document.getElementById('scene-list');
+    list.innerHTML = "";
+    editor.querySelectorAll('.scene-heading').forEach(s => {
+        const item = document.createElement('div');
+        item.className = 'nav-item mb-1';
+        item.innerText = s.innerText || "NEW SCENE";
+        item.onclick = () => s.scrollIntoView({ behavior: 'smooth' });
+        list.appendChild(item);
+    });
+}
+
+// Sidebar Buttons
 document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
 document.getElementById('logout-btn').onclick = () => signOut(auth);
 document.getElementById('help-btn').onclick = window.toggleLegend;
@@ -90,15 +138,4 @@ document.getElementById('legend-overlay').onclick = window.toggleLegend;
 document.getElementById('beats-tab-btn').onclick = () => { document.getElementById('tab-beats').style.display = 'block'; document.getElementById('tab-chars').style.display = 'none'; };
 document.getElementById('chars-tab-btn').onclick = () => { document.getElementById('tab-beats').style.display = 'none'; document.getElementById('tab-chars').style.display = 'block'; };
 
-async function saveToCloud() {
-    if (currentUser) {
-        await setDoc(doc(db, "scripts", currentUser.uid), { content: editor.innerHTML }, { merge: true });
-    }
-}
-
-function updateStats() {
-    document.getElementById('stat-pages').innerText = document.querySelectorAll('.paper-page').length;
-    document.getElementById('stat-words').innerText = editor.innerText.trim().split(/\s+/).length;
-}
-
-editor.addEventListener('input', saveToCloud);
+editor.addEventListener('input', () => { saveToCloud(); updateStats(); });
