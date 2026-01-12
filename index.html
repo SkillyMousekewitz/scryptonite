@@ -28,27 +28,54 @@
             --text-sidebar: #636e72;
         }
 
-        body { margin: 0; display: flex; height: 100vh; background: var(--bg-main); color: var(--text-main); transition: 0.3s; overflow: hidden; }
+        /* LAYOUT FIX: Flexbox Row ensures side-by-side positioning */
+        body { 
+            margin: 0; 
+            display: flex; 
+            flex-direction: row; 
+            height: 100vh; 
+            background: var(--bg-main); 
+            color: var(--text-main); 
+            transition: 0.3s; 
+            overflow: hidden; 
+        }
 
         /* SIDEBARS */
         #left-sidebar, #right-sidebar { 
             background: var(--bg-sidebar); 
             color: var(--text-sidebar); 
-            display: flex; flex-direction: column; 
-            padding: 20px; z-index: 100; transition: 0.3s ease;
+            display: flex; 
+            flex-direction: column; 
+            padding: 20px; 
+            z-index: 100; 
+            transition: 0.3s ease;
+            flex-shrink: 0; /* Prevents sidebars from squishing */
         }
         #left-sidebar { width: var(--sidebar-width); border-right: 1px solid #2d3436; }
         #right-sidebar { width: var(--right-width); border-left: 1px solid #2d3436; }
 
-        .nav-item { padding: 8px; font-size: 0.8rem; cursor: pointer; border-bottom: 1px solid #2d3436; text-transform: uppercase; border-radius: 4px; }
-        .nav-item:hover { color: white; background: #2d3436; }
+        /* EDITOR FIX: flex-shrink and min-width allow the middle to yield space */
+        #main-editor { 
+            flex-grow: 1; 
+            flex-shrink: 1; 
+            min-width: 0; 
+            overflow-y: auto; 
+            display: flex; 
+            justify-content: center; 
+            padding: 40px 20px; 
+            scroll-behavior: smooth; 
+        }
 
-        /* EDITOR */
-        #main-editor { flex-grow: 1; overflow-y: auto; display: flex; justify-content: center; padding: 40px 20px; scroll-behavior: smooth; }
         #script-container { 
-            width: 8.5in; min-height: 11in; background: var(--bg-editor); 
-            padding: 1in 1in 1in 1.5in; box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
-            font-family: 'Courier Prime', Courier, monospace; font-size: 12pt; line-height: 1.2; outline: none;
+            width: 8.5in; 
+            min-height: 11in; 
+            background: var(--bg-editor); 
+            padding: 1in 1in 1in 1.5in; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+            font-family: 'Courier Prime', Courier, monospace; 
+            font-size: 12pt; 
+            line-height: 1.2; 
+            outline: none;
         }
 
         /* SCREENPLAY ELEMENTS */
@@ -65,19 +92,21 @@
         body.focus-mode #left-sidebar { margin-left: calc(var(--sidebar-width) * -1); }
         body.focus-mode #right-sidebar { margin-right: calc(var(--right-width) * -1); }
         
-        #auth-overlay, #tutorial-overlay, #legend-overlay { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; }
-        #auth-overlay, #tutorial-overlay { background: var(--bg-main); }
+        #auth-overlay, #legend-overlay { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        #auth-overlay { background: var(--bg-main); }
         #legend-overlay { background: rgba(0,0,0,0.85); z-index: 10001; cursor: pointer; }
 
-        .story-box { background: rgba(255,255,255,0.05); min-height: 300px; font-size: 0.85rem; border: 1px dashed #444; padding: 15px; border-radius: 8px; outline: none; overflow-y: auto; color: #ddd; }
+        .story-box { background: rgba(255,255,255,0.05); min-height: 400px; font-size: 0.85rem; border: 1px dashed #444; padding: 15px; border-radius: 8px; outline: none; overflow-y: auto; color: #ddd; }
 
         @media print {
-            #left-sidebar, #right-sidebar, .script-note, #auth-overlay, #tutorial-overlay, #legend-overlay { display: none !important; }
+            #left-sidebar, #right-sidebar, .script-note, #auth-overlay, #legend-overlay { display: none !important; }
             #main-editor { padding: 0; background: white; }
             #script-container { box-shadow: none; border: none; width: 100%; }
         }
 
         kbd { background-color: #333; border-radius: 3px; color: #00cec9; padding: 2px 4px; font-size: 0.85em; font-weight: 700; border: 1px solid #555; }
+        .nav-item { padding: 8px; font-size: 0.8rem; cursor: pointer; border-bottom: 1px solid #2d3436; text-transform: uppercase; border-radius: 4px; }
+        .nav-item:hover { color: white; background: #2d3436; }
     </style>
 </head>
 <body>
@@ -85,7 +114,7 @@
     <div id="auth-overlay">
         <div class="card p-5 shadow-lg text-center" style="width: 400px; border-radius: 20px;">
             <h1 style="font-weight: 800; letter-spacing: -1px;">SCRYPT<span style="color:var(--accent)">ONITE</span></h1>
-            <p class="text-muted mb-4">Cloud-synced screenwriting suite.</p>
+            <p class="text-muted mb-4">Focus-driven screenwriting suite.</p>
             <button id="login-btn" class="btn btn-dark w-100 py-3 mb-2">Sign in with Google</button>
         </div>
     </div>
@@ -123,7 +152,7 @@
             <button class="btn btn-outline-secondary btn-sm" onclick="toggleFocusMode()">Focus Mode</button>
             <button class="btn btn-outline-warning btn-sm" onclick="saveVersion()">Snapshot</button>
             <button class="btn btn-outline-info btn-sm" onclick="toggleLegend()">Help</button>
-            <button class="btn btn-success btn-sm" onclick="exportToPDF()">PDF</button>
+            <button class="btn btn-success btn-sm" onclick="exportToPDF()">PDF Export</button>
             <button class="btn btn-link btn-sm text-danger mt-3" onclick="signOutUser()">Sign Out</button>
         </div>
     </div>
@@ -137,22 +166,22 @@
 
     <div id="right-sidebar">
         <div class="btn-group mb-3 w-100">
-            <button id="btn-beats" class="btn btn-sm btn-info" onclick="switchTab('beats')">BEAT SHEET</button>
-            <button id="btn-chars" class="btn btn-sm btn-outline-info" onclick="switchTab('chars')">CHARACTERS</button>
+            <button id="btn-beats" class="btn btn-sm btn-info" onclick="switchTab('beats')">BEATS</button>
+            <button id="btn-chars" class="btn btn-sm btn-outline-info" onclick="switchTab('chars')">CHARS</button>
         </div>
 
         <div id="tab-beats">
             <div id="beat-container" contenteditable="true" class="story-box">
-                <b>ACT I:</b><br>• <br><br><b>ACT II:</b><br>• <br><br><b>ACT III:</b><br>• 
+                <b>STORY BEATS:</b><br>• 
             </div>
         </div>
 
         <div id="tab-chars" style="display:none;">
             <div id="char-container" contenteditable="true" class="story-box">
-                <b>Character Name:</b><br>Traits/Goals...
+                <b>CHARACTERS:</b><br>• 
             </div>
         </div>
-        <div class="mt-3 small text-muted text-center italic">Cloud Synced & Private</div>
+        <div class="mt-3 small text-muted text-center italic">Auto-Synced to Cloud</div>
     </div>
 
     <script type="module">
@@ -212,13 +241,12 @@
         window.toggleFocusMode = () => document.body.classList.toggle('focus-mode');
 
         // --- KEYBOARD ENGINE ---
-        container.addEventListener('keydown', (e) => {
-            const sel = window.getSelection();
-            const line = sel.anchorNode?.parentElement?.closest('.line');
-            
+        document.addEventListener('keydown', (e) => {
             if (e.ctrlKey && (e.key === '/' || e.code === 'Slash')) { e.preventDefault(); toggleLegend(); return; }
             if (e.ctrlKey && e.key === '\\') { e.preventDefault(); toggleFocusMode(); return; }
             
+            const sel = window.getSelection();
+            const line = sel.anchorNode?.parentElement?.closest('.line');
             if (!line) return;
 
             if (e.key === 'Tab') {
@@ -271,11 +299,13 @@
             onSnapshot(doc(db, "scripts", uid), (snap) => {
                 if (snap.exists()) {
                     const data = snap.data();
-                    if (document.activeElement !== container) container.innerHTML = data.content || "";
+                    if (document.activeElement !== container) {
+                        container.innerHTML = data.content || "";
+                        updateNavigator();
+                        updateStats();
+                    }
                     if (document.activeElement !== beatsBox) beatsBox.innerHTML = data.beats || "<b>BEAT SHEET:</b>";
                     if (document.activeElement !== charsBox) charsBox.innerHTML = data.chars || "<b>CHARACTERS:</b>";
-                    updateNavigator();
-                    updateStats();
                 }
             });
         }
