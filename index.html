@@ -123,14 +123,15 @@
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 
         // --- REPLACE WITH YOUR FIREBASE CONFIG ---
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
+const firebaseConfig = {
+  apiKey: "AIzaSyCMJ8mkBdyhLDbC6RmaVK9zWl-XSms6RoA",
+  authDomain: "scryptonite-6a340.firebaseapp.com",
+  projectId: "scryptonite-6a340",
+  storageBucket: "scryptonite-6a340.firebasestorage.app",
+  messagingSenderId: "875468928578",
+  appId: "1:875468928578:web:524ae574d4c84593a49fdb",
+  measurementId: "G-RPGWSZXJYF"
+};
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
