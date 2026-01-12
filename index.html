@@ -9,154 +9,64 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
- /* 1. VARIABLES & CORE THEME */
-:root {
-    --sidebar-width: 260px;
-    --right-width: 300px;
-    --bg-main: #f4f7f6;
-    --bg-sidebar: #1a1c1e;
-    --bg-editor: #ffffff;
-    --text-main: #2d3436;
-    --text-sidebar: #b2bec3;
-    --accent: #00cec9;
-    --page-break-color: #e0e0e0;
-}
-
-body.dark-mode {
-    --bg-main: #0f1111;
-    --bg-sidebar: #000000;
-    --bg-editor: #ffffff; 
-    --text-main: #dfe6e9;
-    --text-sidebar: #636e72;
-    --page-break-color: #dcdcdc;
-}
-
-/* 2. LAYOUT ENGINE */
-body { 
-    margin: 0; 
-    display: flex; 
-    flex-direction: row; 
-    height: 100vh; 
-    background: var(--bg-main); 
-    color: var(--text-main); 
-    transition: 0.3s; 
-    overflow: hidden; 
-}
-
-/* 3. OVERLAYS (AUTH & HELP) */
-#auth-overlay, #legend-overlay { 
-    position: fixed; 
-    inset: 0; 
-    z-index: 9999; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-}
-
-#auth-overlay { 
-    background: var(--bg-main); 
-}
-
-#legend-overlay { 
-    background: rgba(0,0,0,0.85); 
-    z-index: 10001; 
-    cursor: pointer; 
-    display: none; /* Controlled by toggleLegend() */
-}
-
-/* 4. SIDEBARS (LEFT & RIGHT) */
-#left-sidebar, #right-sidebar { 
-    background: var(--bg-sidebar); 
-    color: var(--text-sidebar); 
-    display: flex; 
-    flex-direction: column; 
-    padding: 20px; 
-    z-index: 100; 
-    transition: 0.3s ease; 
-    flex-shrink: 0;
-}
-
-#left-sidebar { width: var(--sidebar-width); border-right: 1px solid #2d3436; }
-#right-sidebar { width: var(--right-width); border-left: 1px solid #2d3436; }
-
-body.focus-mode #left-sidebar { margin-left: calc(var(--sidebar-width) * -1); }
-body.focus-mode #right-sidebar { margin-right: calc(var(--right-width) * -1); }
-
-/* 5. THE INFINITE EDITOR ENGINE */
-#main-editor { 
-    flex-grow: 1; 
-    flex-shrink: 1; 
-    min-width: 0; 
-    overflow-y: auto; 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    padding: 40px 0; 
-}
-
-/* FIXED: display: table ensures the background grows with content */
+/* --- UPDATED INFINITE PAPER CSS --- */
 #script-container { 
-    display: table; 
+    display: block; /* Switched back for better margin control */
+    margin: 0 auto 400px auto;
     width: 8.5in; 
     min-height: 11in; 
-    height: auto !important;
-    background-color: white !important; 
-    background-image: linear-gradient(to bottom, transparent 10.99in, var(--page-break-color) 11in);
+    height: auto !important; 
+    background-color: #f0f2f5; /* The "Desk" color */
+    
+    /* This creates the look of stacked sheets of paper with gaps */
+    background-image: 
+        linear-gradient(to bottom, #ffffff 10.7in, transparent 10.7in, transparent 11in);
     background-size: 100% 11in;
     background-repeat: repeat-y;
+    
+    /* Internal Page Margins (First Page) */
     padding: 1in 1in 1in 1.5in; 
-    box-shadow: 0 0 30px rgba(0,0,0,0.15); 
+    
     font-family: 'Courier Prime', Courier, monospace; 
     font-size: 12pt; 
-    line-height: 1.2; 
+    line-height: 1.2; /* Critical for alignment */
     outline: none;
     color: #000;
-    margin-bottom: 400px;
     box-sizing: border-box;
+    position: relative;
 }
 
-/* 6. SCRIPT ELEMENTS */
-.line { min-height: 1.2em; outline: none; position: relative; margin: 0; }
-.scene-heading { text-transform: uppercase; font-weight: bold; margin-top: 25px; }
-.action { margin-top: 12px; }
-.character { margin-left: 2in; width: 4in; margin-top: 12px; text-transform: uppercase; }
-.parenthetical { margin-left: 1.5in; width: 2.5in; }
-.dialogue { margin-left: 1in; width: 3.5in; margin-bottom: 4px; }
-.transition { text-transform: uppercase; margin-left: 4.5in; margin-top: 12px; }
-.script-note { 
-    background: rgba(253, 250, 114, 0.4); 
-    color: #000; padding: 10px; margin: 10px 0; 
-    border-left: 4px solid #f1c40f; 
-    font-family: sans-serif; font-size: 0.85rem; font-style: italic; 
+/* Ensure the white "Paper" effect stays under the text */
+#script-container::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: -1;
+    background-color: white;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
 }
 
-/* 7. UI COMPONENTS */
-.story-box { 
-    background: rgba(255,255,255,0.05); 
-    min-height: 400px; 
-    font-size: 0.85rem; 
-    border: 1px dashed #444; 
-    padding: 15px; 
-    border-radius: 8px; 
+/* SCRIPT ELEMENT FORMATTING (Ensuring it sticks on all pages) */
+.line { 
+    min-height: 1.2em; 
     outline: none; 
-    color: #ddd; 
+    position: relative; 
+    margin: 0; 
+    width: 100%;
 }
 
-.nav-item { 
-    padding: 8px; font-size: 0.8rem; cursor: pointer; 
-    border-bottom: 1px solid #2d3436; text-transform: uppercase; border-radius: 4px; 
-}
-.nav-item:hover { color: white; background: #2d3436; }
+.scene-heading { text-transform: uppercase; font-weight: bold; margin-top: 24pt; } /* 2 lines of space */
+.action { margin-top: 12pt; } /* 1 line of space */
+.character { margin-left: 2in; width: 4in; margin-top: 12pt; text-transform: uppercase; }
+.parenthetical { margin-left: 1.5in; width: 2.5in; }
+.dialogue { margin-left: 1in; width: 3.5in; margin-bottom: 0; }
+.transition { text-transform: uppercase; margin-left: 4.5in; margin-top: 12pt; }
 
-kbd { 
-    background-color: #333; border-radius: 3px; color: #00cec9; 
-    padding: 2px 4px; font-size: 0.85em; font-weight: 700; border: 1px solid #555; 
-}
-
-@media print {
-    #left-sidebar, #right-sidebar, .script-note, #auth-overlay, #legend-overlay { display: none !important; }
-    #main-editor { padding: 0; background: white; }
-    #script-container { box-shadow: none; border: none; width: 100%; background-image: none !important; }
+/* The "Gap" effect to prevent text from hitting the line */
+.line::after {
+    content: "";
+    display: block;
+    height: 0;
 }
     </style>
 </head>
@@ -246,7 +156,7 @@ const beatsBox = document.getElementById('beat-container');
 const charsBox = document.getElementById('char-container');
 const elements = ["scene-heading", "action", "character", "parenthetical", "dialogue", "transition"];
 
-// --- AUTHENTICATION LOGIC ---
+// --- AUTHENTICATION ---
 document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
 window.signOutUser = () => signOut(auth);
 
@@ -260,7 +170,7 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-// --- KEYBOARD ENGINE (TAB & ENTER LOGIC) ---
+// --- KEYBOARD ENGINE (REFINED FOR MARGINS & PAGING) ---
 document.addEventListener('keydown', (e) => {
     if (e.ctrlKey && (e.key === '/' || e.code === 'Slash')) { e.preventDefault(); toggleLegend(); return; }
     if (e.ctrlKey && e.key === '\\') { e.preventDefault(); toggleFocusMode(); return; }
@@ -268,22 +178,21 @@ document.addEventListener('keydown', (e) => {
     if (!container.contains(document.activeElement)) return;
 
     const sel = window.getSelection();
-    // Anchor check for Table-based layout
     const line = sel.anchorNode?.nodeType === 3 ? sel.anchorNode.parentElement.closest('.line') : sel.anchorNode.closest('.line');
     
+    // TAB: Cycle Elements with Cursor Anchor
     if (e.key === 'Tab') {
         e.preventDefault();
         if (!line) return;
         
         const offset = sel.anchorOffset;
-        if (!line.innerText.trim()) line.innerHTML = "&#8203;"; // Cursor anchor
+        if (!line.innerText.trim()) line.innerHTML = "&#8203;"; 
 
         let idx = elements.indexOf(line.dataset.type);
         idx = e.shiftKey ? (idx - 1 + elements.length) % elements.length : (idx + 1) % elements.length;
         line.className = `line ${elements[idx]}`;
         line.dataset.type = elements[idx];
         
-        // Restore Cursor Focus
         const range = document.createRange();
         const node = line.firstChild || line;
         range.setStart(node, Math.min(offset, node.length || 0));
@@ -293,11 +202,18 @@ document.addEventListener('keydown', (e) => {
         return;
     }
 
+    // ENTER: Smart Transition & Formatting Persistence
     if (e.key === 'Enter') {
         e.preventDefault();
         if (!line) return;
+        
         const type = line.dataset.type;
-        const nextType = { "character": "dialogue", "scene-heading": "action", "dialogue": "action", "parenthetical": "dialogue" }[type] || "action";
+        const nextType = { 
+            "character": "dialogue", 
+            "scene-heading": "action", 
+            "dialogue": "action", 
+            "parenthetical": "dialogue" 
+        }[type] || "action";
         
         const newLine = document.createElement('div');
         newLine.className = `line ${nextType}`;
@@ -310,6 +226,10 @@ document.addEventListener('keydown', (e) => {
         range.collapse(true);
         sel.removeAllRanges();
         sel.addRange(range);
+
+        // Keep page breaks clean
+        newLine.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        updateStats();
         return;
     }
 
@@ -319,7 +239,7 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// --- CLOUD SYNC & STATS ---
+// --- CLOUD SYNC & STATS ENGINE ---
 [container, beatsBox, charsBox].forEach(box => {
     box.addEventListener('input', () => {
         if (box === container) autoCapitalize();
@@ -347,7 +267,7 @@ function startSync(uid) {
                 updateNavigator();
                 updateStats();
             }
-            if (document.activeElement !== beatsBox) beatsBox.innerHTML = data.beats || "<b>STORY BEATS:</b>";
+            if (document.activeElement !== beatsBox) beatsBox.innerHTML = data.beats || "<b>BEAT SHEET:</b>";
             if (document.activeElement !== charsBox) charsBox.innerHTML = data.chars || "<b>CHARACTERS:</b>";
         }
     });
@@ -398,7 +318,7 @@ function updateNavigator() {
 
 function updateStats() {
     const words = container.innerText.trim().split(/\s+/).length;
-    // Updated for Table-based layout expansion
+    // Calculate pages based on 1056px (11 inches) increments
     const pages = Math.max(1, Math.ceil(container.offsetHeight / 1056)); 
     document.getElementById('stat-pages').innerText = pages;
     document.getElementById('stat-words').innerText = words;
