@@ -9,20 +9,23 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
-        :root { --sidebar-width: 280px; --bg-sidebar: #1a1c1e; --accent: #00cec9; }
-        body { margin: 0; display: flex; height: 100vh; width: 100vw; background: #2d3436; overflow: hidden; }
+        :root { --sidebar-width: 280px; --right-width: 300px; --bg-sidebar: #1a1c1e; --accent: #00cec9; }
+        body { margin: 0; display: flex; height: 100vh; width: 100vw; background: #2d3436; overflow: hidden; transition: 0.3s; }
         
-        #left-sidebar { 
-            width: var(--sidebar-width); background: var(--bg-sidebar); color: #b2bec3; 
-            display: flex; flex-direction: column; padding: 20px; border-right: 1px solid #444; 
+        #left-sidebar, #right-sidebar { 
+            background: var(--bg-sidebar); color: #b2bec3; 
+            display: flex; flex-direction: column; padding: 20px; z-index: 100; flex-shrink: 0;
+            transition: margin 0.3s ease;
         }
+        #left-sidebar { width: var(--sidebar-width); border-right: 1px solid #444; }
+        #right-sidebar { width: var(--right-width); border-left: 1px solid #444; }
 
         #main-editor { 
             flex-grow: 1; overflow-y: auto; background: #2d3436; 
             padding: 40px 0; display: flex; flex-direction: column; align-items: center; 
         }
 
-        /* BRUTE FORCE PAPER STYLING */
+        /* BRUTE FORCE PAPER - FORCED VISIBILITY */
         .paper-page { 
             display: block !important;
             width: 8.5in !important; 
@@ -39,7 +42,6 @@
             overflow: hidden !important;
         }
 
-        /* SCREENPLAY ELEMENTS */
         .line { min-height: 1.2em; width: 100%; margin: 0; outline: none; }
         .scene-heading { text-transform: uppercase; font-weight: bold; margin-top: 25px; }
         .action { margin-top: 12px; }
@@ -47,15 +49,36 @@
         .dialogue { margin-left: 1in; width: 3.5in; }
 
         /* UI OVERLAYS */
-        #auth-overlay { position: fixed; inset: 0; z-index: 9999; background: #f4f7f6; display: flex; align-items: center; justify-content: center; }
+        #auth-overlay, #legend-overlay { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        #auth-overlay { background: #f4f7f6; }
+        #legend-overlay { background: rgba(0,0,0,0.85); display: none; cursor: pointer; }
+        
+        .story-box { background: rgba(255,255,255,0.05); min-height: 400px; border: 1px dashed #444; padding: 15px; color: #ddd; outline: none; }
         .nav-item { padding: 8px; font-size: 0.8rem; cursor: pointer; border-bottom: 1px solid #444; text-transform: uppercase; }
+        kbd { background: #333; color: var(--accent); padding: 2px 4px; border-radius: 3px; font-weight: bold; }
+        
+        body.focus-mode #left-sidebar { margin-left: calc(var(--sidebar-width) * -1); }
+        body.focus-mode #right-sidebar { margin-right: calc(var(--right-width) * -1); }
     </style>
 </head>
 <body>
+
     <div id="auth-overlay">
         <div class="card p-5 shadow text-center" style="width: 400px; border-radius: 20px;">
             <h1 style="font-weight: 800;">SCRYPT<span style="color:var(--accent)">ONITE</span></h1>
             <button id="login-btn" class="btn btn-dark w-100 py-3 mt-4">Sign in with Google</button>
+        </div>
+    </div>
+
+    <div id="legend-overlay">
+        <div class="card bg-dark text-white p-4 border-secondary shadow-lg" style="width: 450px;">
+            <h5 class="text-info">COMMANDS</h5>
+            <hr>
+            <p><kbd>Tab</kbd> Cycle Element</p>
+            <p><kbd>Enter</kbd> Smart Jump & Page Check</p>
+            <p><kbd>Ctrl + \</kbd> Toggle Focus Mode</p>
+            <p><kbd>Ctrl + /</kbd> Toggle Help Menu</p>
+            <div class="text-center mt-3 text-muted small">Click anywhere to close</div>
         </div>
     </div>
 
@@ -64,8 +87,10 @@
         <div id="scene-list" class="flex-grow-1 overflow-auto mb-3"></div>
         <div class="small mb-3">Pages: <span id="stat-pages">1</span></div>
         <div class="d-grid gap-2">
+            <button class="btn btn-outline-info btn-sm" id="help-btn">Help (Ctrl + /)</button>
+            <button class="btn btn-outline-secondary btn-sm" id="focus-btn">Focus Mode</button>
             <button class="btn btn-success btn-sm" id="pdf-btn">Export PDF</button>
-            <button class="btn btn-link btn-sm text-danger" id="logout-btn">Sign Out</button>
+            <button class="btn btn-link btn-sm text-danger mt-3" id="logout-btn">Sign Out</button>
         </div>
     </div>
 
@@ -73,6 +98,15 @@
         <div class="paper-page" contenteditable="true">
             <div class="line scene-heading" data-type="scene-heading">INT. NEW PROJECT - DAY</div>
         </div>
+    </div>
+
+    <div id="right-sidebar">
+        <div class="btn-group mb-3 w-100">
+            <button class="btn btn-sm btn-info" id="beats-tab-btn">BEATS</button>
+            <button class="btn btn-sm btn-outline-info" id="chars-tab-btn">CHARS</button>
+        </div>
+        <div id="tab-beats"><div id="beat-container" contenteditable="true" class="story-box"><b>BEAT SHEET:</b></div></div>
+        <div id="tab-chars" style="display:none;"><div id="char-container" contenteditable="true" class="story-box"><b>CHARACTERS:</b></div></div>
     </div>
 
     <script type="module" src="script.js"></script>
