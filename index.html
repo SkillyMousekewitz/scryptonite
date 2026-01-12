@@ -9,98 +9,155 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
-        :root {
-            --sidebar-width: 260px;
-            --right-width: 300px;
-            --bg-main: #f4f7f6;
-            --bg-sidebar: #1a1c1e;
-            --bg-editor: #ffffff;
-            --text-main: #2d3436;
-            --text-sidebar: #b2bec3;
-            --accent: #00cec9;
-            --page-break-color: #e0e0e0;
-        }
+ /* 1. VARIABLES & CORE THEME */
+:root {
+    --sidebar-width: 260px;
+    --right-width: 300px;
+    --bg-main: #f4f7f6;
+    --bg-sidebar: #1a1c1e;
+    --bg-editor: #ffffff;
+    --text-main: #2d3436;
+    --text-sidebar: #b2bec3;
+    --accent: #00cec9;
+    --page-break-color: #e0e0e0;
+}
 
-        body.dark-mode {
-            --bg-main: #0f1111;
-            --bg-sidebar: #000000;
-            --bg-editor: #ffffff; 
-            --text-main: #dfe6e9;
-            --text-sidebar: #636e72;
-            --page-break-color: #dcdcdc;
-        }
+body.dark-mode {
+    --bg-main: #0f1111;
+    --bg-sidebar: #000000;
+    --bg-editor: #ffffff; 
+    --text-main: #dfe6e9;
+    --text-sidebar: #636e72;
+    --page-break-color: #dcdcdc;
+}
 
-        body { 
-            margin: 0; display: flex; flex-direction: row; height: 100vh; 
-            background: var(--bg-main); color: var(--text-main); transition: 0.3s; overflow: hidden; 
-        }
+/* 2. LAYOUT ENGINE */
+body { 
+    margin: 0; 
+    display: flex; 
+    flex-direction: row; 
+    height: 100vh; 
+    background: var(--bg-main); 
+    color: var(--text-main); 
+    transition: 0.3s; 
+    overflow: hidden; 
+}
 
-        #left-sidebar, #right-sidebar { 
-            background: var(--bg-sidebar); color: var(--text-sidebar); 
-            display: flex; flex-direction: column; padding: 20px; z-index: 100; transition: 0.3s ease; flex-shrink: 0;
-        }
-        #left-sidebar { width: var(--sidebar-width); border-right: 1px solid #2d3436; }
-        #right-sidebar { width: var(--right-width); border-left: 1px solid #2d3436; }
+/* 3. OVERLAYS (AUTH & HELP) */
+#auth-overlay, #legend-overlay { 
+    position: fixed; 
+    inset: 0; 
+    z-index: 9999; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+}
 
-        /* FIXED: The scrollable area now uses a standard block flow to allow infinite growth */
-        #main-editor { 
-            flex-grow: 1; flex-shrink: 1; min-width: 0; 
-            overflow-y: auto; overflow-x: hidden;
-            background: var(--bg-main);
-            padding: 40px 0; 
-        }
+#auth-overlay { 
+    background: var(--bg-main); 
+}
 
-        /* FIXED: The Paper Engine uses display: block and margin: auto for perfect centering and growth */
-        #script-container { 
-            display: block;
-            margin: 0 auto 400px auto; /* 400px buffer so you can always scroll the last line to the top */
-            width: 8.5in; 
-            min-height: 11in; 
-            height: auto !important; /* Forces background to grow with text */
-            background-color: white !important; 
-            /* Page break line every 11 inches */
-            background-image: linear-gradient(to bottom, transparent 10.99in, var(--page-break-color) 11in);
-            background-size: 100% 11in;
-            background-repeat: repeat-y;
-            padding: 1in 1in 1in 1.5in; 
-            box-shadow: 0 0 30px rgba(0,0,0,0.2); 
-            font-family: 'Courier Prime', Courier, monospace; 
-            font-size: 12pt; 
-            line-height: 1.2; 
-            outline: none;
-            color: #000;
-            box-sizing: border-box;
-        }
+#legend-overlay { 
+    background: rgba(0,0,0,0.85); 
+    z-index: 10001; 
+    cursor: pointer; 
+    display: none; /* Controlled by toggleLegend() */
+}
 
-        /* SCREENPLAY ELEMENTS */
-        .line { min-height: 1.2em; outline: none; position: relative; margin: 0; }
-        .scene-heading { text-transform: uppercase; font-weight: bold; margin-top: 25px; }
-        .action { margin-top: 12px; }
-        .character { margin-left: 2in; width: 4in; margin-top: 12px; text-transform: uppercase; }
-        .parenthetical { margin-left: 1.5in; width: 2.5in; }
-        .dialogue { margin-left: 1in; width: 3.5in; margin-bottom: 4px; }
-        .transition { text-transform: uppercase; margin-left: 4.5in; margin-top: 12px; }
-        .script-note { background: rgba(253, 250, 114, 0.4); color: #000; padding: 10px; margin: 10px 0; border-left: 4px solid #f1c40f; font-family: sans-serif; font-size: 0.85rem; font-style: italic; }
+/* 4. SIDEBARS (LEFT & RIGHT) */
+#left-sidebar, #right-sidebar { 
+    background: var(--bg-sidebar); 
+    color: var(--text-sidebar); 
+    display: flex; 
+    flex-direction: column; 
+    padding: 20px; 
+    z-index: 100; 
+    transition: 0.3s ease; 
+    flex-shrink: 0;
+}
 
-        /* OVERLAYS */
-        body.focus-mode #left-sidebar { margin-left: calc(var(--sidebar-width) * -1); }
-        body.focus-mode #right-sidebar { margin-right: calc(var(--right-width) * -1); }
-        
-        #auth-overlay, #legend-overlay { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; }
-        #auth-overlay { background: var(--bg-main); }
-        #legend-overlay { background: rgba(0,0,0,0.85); z-index: 10001; cursor: pointer; }
+#left-sidebar { width: var(--sidebar-width); border-right: 1px solid #2d3436; }
+#right-sidebar { width: var(--right-width); border-left: 1px solid #2d3436; }
 
-        .story-box { background: rgba(255,255,255,0.05); min-height: 400px; font-size: 0.85rem; border: 1px dashed #444; padding: 15px; border-radius: 8px; outline: none; overflow-y: auto; color: #ddd; }
+body.focus-mode #left-sidebar { margin-left: calc(var(--sidebar-width) * -1); }
+body.focus-mode #right-sidebar { margin-right: calc(var(--right-width) * -1); }
 
-        @media print {
-            #left-sidebar, #right-sidebar, .script-note, #auth-overlay, #legend-overlay { display: none !important; }
-            #main-editor { padding: 0; background: white; }
-            #script-container { box-shadow: none; border: none; width: 100%; background-image: none !important; }
-        }
+/* 5. THE INFINITE EDITOR ENGINE */
+#main-editor { 
+    flex-grow: 1; 
+    flex-shrink: 1; 
+    min-width: 0; 
+    overflow-y: auto; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    padding: 40px 0; 
+}
 
-        kbd { background-color: #333; border-radius: 3px; color: #00cec9; padding: 2px 4px; font-size: 0.85em; font-weight: 700; border: 1px solid #555; }
-        .nav-item { padding: 8px; font-size: 0.8rem; cursor: pointer; border-bottom: 1px solid #2d3436; text-transform: uppercase; border-radius: 4px; }
-        .nav-item:hover { color: white; background: #2d3436; }
+/* FIXED: display: table ensures the background grows with content */
+#script-container { 
+    display: table; 
+    width: 8.5in; 
+    min-height: 11in; 
+    height: auto !important;
+    background-color: white !important; 
+    background-image: linear-gradient(to bottom, transparent 10.99in, var(--page-break-color) 11in);
+    background-size: 100% 11in;
+    background-repeat: repeat-y;
+    padding: 1in 1in 1in 1.5in; 
+    box-shadow: 0 0 30px rgba(0,0,0,0.15); 
+    font-family: 'Courier Prime', Courier, monospace; 
+    font-size: 12pt; 
+    line-height: 1.2; 
+    outline: none;
+    color: #000;
+    margin-bottom: 400px;
+    box-sizing: border-box;
+}
+
+/* 6. SCRIPT ELEMENTS */
+.line { min-height: 1.2em; outline: none; position: relative; margin: 0; }
+.scene-heading { text-transform: uppercase; font-weight: bold; margin-top: 25px; }
+.action { margin-top: 12px; }
+.character { margin-left: 2in; width: 4in; margin-top: 12px; text-transform: uppercase; }
+.parenthetical { margin-left: 1.5in; width: 2.5in; }
+.dialogue { margin-left: 1in; width: 3.5in; margin-bottom: 4px; }
+.transition { text-transform: uppercase; margin-left: 4.5in; margin-top: 12px; }
+.script-note { 
+    background: rgba(253, 250, 114, 0.4); 
+    color: #000; padding: 10px; margin: 10px 0; 
+    border-left: 4px solid #f1c40f; 
+    font-family: sans-serif; font-size: 0.85rem; font-style: italic; 
+}
+
+/* 7. UI COMPONENTS */
+.story-box { 
+    background: rgba(255,255,255,0.05); 
+    min-height: 400px; 
+    font-size: 0.85rem; 
+    border: 1px dashed #444; 
+    padding: 15px; 
+    border-radius: 8px; 
+    outline: none; 
+    color: #ddd; 
+}
+
+.nav-item { 
+    padding: 8px; font-size: 0.8rem; cursor: pointer; 
+    border-bottom: 1px solid #2d3436; text-transform: uppercase; border-radius: 4px; 
+}
+.nav-item:hover { color: white; background: #2d3436; }
+
+kbd { 
+    background-color: #333; border-radius: 3px; color: #00cec9; 
+    padding: 2px 4px; font-size: 0.85em; font-weight: 700; border: 1px solid #555; 
+}
+
+@media print {
+    #left-sidebar, #right-sidebar, .script-note, #auth-overlay, #legend-overlay { display: none !important; }
+    #main-editor { padding: 0; background: white; }
+    #script-container { box-shadow: none; border: none; width: 100%; background-image: none !important; }
+}
     </style>
 </head>
 <body>
