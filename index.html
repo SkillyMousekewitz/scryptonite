@@ -116,8 +116,7 @@
 
     <div id="main-editor">
         <div id="script-container" contenteditable="true" spellcheck="true">
-            <div class="line scene-heading" data-type="scene-heading">INT. NEW PROJECT - DAY</div>
-            <div class="line action" data-type="action">Begin writing...</div>
+            <div class="line scene-heading" data-type="scene-heading">&#8203;</div>
         </div>
     </div>
 
@@ -176,23 +175,29 @@
             if (!container.contains(document.activeElement)) return;
 
             const sel = window.getSelection();
-            const line = sel.anchorNode?.parentElement?.closest('.line');
+            const line = sel.anchorNode?.nodeType === 3 ? sel.anchorNode.parentElement.closest('.line') : sel.anchorNode.closest('.line');
             
             if (e.key === 'Tab') {
                 e.preventDefault();
                 if (!line) return;
-                const offset = sel.anchorOffset;
+                
+                // 1. Ensure line has content so cursor has a node to land on
+                if (!line.innerText.trim()) line.innerHTML = "&#8203;";
+
+                // 2. Cycle Types
                 let idx = elements.indexOf(line.dataset.type);
                 idx = e.shiftKey ? (idx - 1 + elements.length) % elements.length : (idx + 1) % elements.length;
                 line.className = `line ${elements[idx]}`;
                 line.dataset.type = elements[idx];
                 
-                // Restore Cursor
+                // 3. Force Cursor Restore
                 const range = document.createRange();
-                const node = line.firstChild || line;
-                range.setStart(node, Math.min(offset, node.length || 0));
+                const node = line.firstChild;
+                range.setStart(node, node.length);
                 range.collapse(true);
-                sel.removeAllRanges(); sel.addRange(range);
+                sel.removeAllRanges(); 
+                sel.addRange(range);
+                
                 updateNavigator();
                 return;
             }
@@ -206,16 +211,14 @@
                 const newLine = document.createElement('div');
                 newLine.className = `line ${nextType}`;
                 newLine.dataset.type = nextType;
-                newLine.innerHTML = "&#8203;"; // Zero-width space to give the cursor a place to land
+                newLine.innerHTML = "&#8203;"; 
                 line.after(newLine);
 
-                // Force Cursor into New Line
                 const range = document.createRange();
                 range.setStart(newLine.firstChild, 0);
                 range.collapse(true);
                 sel.removeAllRanges();
                 sel.addRange(range);
-                newLine.focus();
                 return;
             }
 
@@ -275,7 +278,7 @@
 
         function autoCapitalize() {
             const sel = window.getSelection();
-            const line = sel.anchorNode?.parentElement?.closest('.line');
+            const line = sel.anchorNode?.nodeType === 3 ? sel.anchorNode.parentElement.closest('.line') : sel.anchorNode.closest('.line');
             if (line && (line.dataset.type === 'character' || line.dataset.type === 'scene-heading')) {
                 const pos = sel.anchorOffset;
                 line.innerText = line.innerText.toUpperCase();
@@ -294,7 +297,7 @@
             container.querySelectorAll('.scene-heading').forEach((s, i) => {
                 const item = document.createElement('div');
                 item.className = 'nav-item mb-1';
-                item.innerText = s.innerText || "NEW SCENE";
+                item.innerText = s.innerText.trim() || "NEW SCENE";
                 item.onclick = () => s.scrollIntoView({ behavior: 'smooth' });
                 list.appendChild(item);
             });
