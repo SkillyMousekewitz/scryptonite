@@ -24,10 +24,10 @@
         body.dark-mode {
             --bg-main: #0f1111;
             --bg-sidebar: #000000;
-            --bg-editor: #1c1e1e;
+            --bg-editor: #ffffff; /* Keep paper white even in dark mode for contrast */
             --text-main: #dfe6e9;
             --text-sidebar: #636e72;
-            --page-break-color: #333;
+            --page-break-color: #dcdcdc;
         }
 
         body { 
@@ -42,33 +42,42 @@
         #left-sidebar { width: var(--sidebar-width); border-right: 1px solid #2d3436; }
         #right-sidebar { width: var(--right-width); border-left: 1px solid #2d3436; }
 
-        #main-editor { flex-grow: 1; flex-shrink: 1; min-width: 0; overflow-y: auto; display: flex; justify-content: center; padding: 40px 20px; }
+        /* THE SCROLLABLE AREA */
+        #main-editor { 
+            flex-grow: 1; flex-shrink: 1; min-width: 0; 
+            overflow-y: auto; display: flex; flex-direction: column; align-items: center; 
+            padding: 40px 0; /* Vertical padding only */
+        }
 
-        /* PAGE BREAK LOGIC: Repeating linear gradient every 11 inches */
+        /* THE PAPER ENGINE */
         #script-container { 
             width: 8.5in; 
             min-height: 11in; 
-            background: var(--bg-editor); 
+            height: auto; /* Allow the paper to grow with content */
+            background-color: white; 
+            /* This creates the repeating page break line every 11 inches */
             background-image: linear-gradient(to bottom, transparent 10.99in, var(--page-break-color) 11in);
             background-size: 100% 11in;
             padding: 1in 1in 1in 1.5in; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+            box-shadow: 0 0 20px rgba(0,0,0,0.2); 
             font-family: 'Courier Prime', Courier, monospace; 
             font-size: 12pt; 
             line-height: 1.2; 
             outline: none;
-            position: relative;
+            color: #000; /* Standard script text is black */
         }
 
-        .line { min-height: 1.2em; outline: none; position: relative; }
+        /* SCREENPLAY ELEMENTS */
+        .line { min-height: 1.2em; outline: none; position: relative; margin: 0; }
         .scene-heading { text-transform: uppercase; font-weight: bold; margin-top: 25px; }
         .action { margin-top: 12px; }
         .character { margin-left: 2in; width: 4in; margin-top: 12px; text-transform: uppercase; }
         .parenthetical { margin-left: 1.5in; width: 2.5in; }
         .dialogue { margin-left: 1in; width: 3.5in; margin-bottom: 4px; }
         .transition { text-transform: uppercase; margin-left: 4.5in; margin-top: 12px; }
-        .script-note { background: rgba(253, 250, 114, 0.2); color: var(--text-main); padding: 10px; margin: 10px 0; border-left: 4px solid #f1c40f; font-family: sans-serif; font-size: 0.85rem; font-style: italic; }
+        .script-note { background: rgba(253, 250, 114, 0.4); color: #000; padding: 10px; margin: 10px 0; border-left: 4px solid #f1c40f; font-family: sans-serif; font-size: 0.85rem; font-style: italic; }
 
+        /* MODES & OVERLAYS */
         body.focus-mode #left-sidebar { margin-left: calc(var(--sidebar-width) * -1); }
         body.focus-mode #right-sidebar { margin-right: calc(var(--right-width) * -1); }
         
@@ -311,7 +320,7 @@
 
         function updateStats() {
             const words = container.innerText.trim().split(/\s+/).length;
-            // A Standard script page is 11 inches tall.
+            // 1056 pixels is roughly 11 inches on most standard browsers
             const pages = Math.max(1, Math.ceil(container.scrollHeight / 1056)); 
             document.getElementById('stat-pages').innerText = pages;
             document.getElementById('stat-words').innerText = words;
