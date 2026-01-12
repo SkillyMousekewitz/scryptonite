@@ -18,7 +18,7 @@ const provider = new GoogleAuthProvider();
 const editor = document.getElementById('main-editor');
 let currentUser = null;
 
-// --- PAGE FACTORY ---
+// PAGE FACTORY ENGINE
 function checkPageOverflow(currentPage) {
     const PAGE_LIMIT = 960; 
     if (currentPage.scrollHeight > PAGE_LIMIT) {
@@ -32,7 +32,7 @@ function checkPageOverflow(currentPage) {
     return null;
 }
 
-// --- AUTH & SYNC ---
+// AUTH & SYNC
 onAuthStateChanged(auth, (user) => {
     if (user) {
         currentUser = user;
@@ -40,6 +40,7 @@ onAuthStateChanged(auth, (user) => {
         onSnapshot(doc(db, "scripts", user.uid), (snap) => {
             if (snap.exists() && !editor.contains(document.activeElement)) {
                 editor.innerHTML = snap.data().content || '<div class="paper-page" contenteditable="true"><div class="line scene-heading" data-type="scene-heading">INT. NEW PROJECT - DAY</div></div>';
+                updateNavigator();
             }
         });
     } else {
@@ -47,23 +48,17 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-// --- GLOBAL ATTACHMENTS FOR BUTTONS ---
-window.toggleFocusMode = () => document.body.classList.toggle('focus-mode');
-window.exportToPDF = () => html2pdf().from(editor).save();
-window.signOutUser = () => signOut(auth);
-
+// EVENT LISTENERS
 document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
-document.getElementById('focus-btn').onclick = window.toggleFocusMode;
-document.getElementById('pdf-btn').onclick = window.exportToPDF;
-document.getElementById('logout-btn').onclick = window.signOutUser;
+document.getElementById('logout-btn').onclick = () => signOut(auth);
+document.getElementById('pdf-btn').onclick = () => html2pdf().from(editor).save();
 
-// --- KEYBOARD ENGINE ---
 document.addEventListener('keydown', (e) => {
     const sel = window.getSelection();
-    const currentPage = sel.anchorNode?.parentElement?.closest('.paper-page');
     const line = sel.anchorNode?.parentElement?.closest('.line');
+    const currentPage = sel.anchorNode?.parentElement?.closest('.paper-page');
 
-    if (!currentPage || !line) return;
+    if (!line || !currentPage) return;
 
     if (e.key === 'Enter') {
         e.preventDefault();
@@ -75,16 +70,32 @@ document.addEventListener('keydown', (e) => {
         const range = document.createRange();
         range.setStart(newLine.firstChild, 0);
         range.collapse(true);
-        sel.removeAllRanges();
-        sel.addRange(range);
+        sel.removeAllRanges(); sel.addRange(range);
 
         checkPageOverflow(currentPage);
         saveToCloud();
     }
 });
 
+editor.addEventListener('input', () => {
+    saveToCloud();
+    document.getElementById('stat-pages').innerText = document.querySelectorAll('.paper-page').length;
+});
+
 async function saveToCloud() {
     if (currentUser) {
         await setDoc(doc(db, "scripts", currentUser.uid), { content: editor.innerHTML }, { merge: true });
     }
+}
+
+function updateNavigator() {
+    const list = document.getElementById('scene-list');
+    list.innerHTML = "";
+    editor.querySelectorAll('.scene-heading').forEach(s => {
+        const item = document.createElement('div');
+        item.className = 'nav-item mb-1';
+        item.innerText = s.innerText || "NEW SCENE";
+        item.onclick = () => s.scrollIntoView({ behavior: 'smooth' });
+        list.appendChild(item);
+    });
 }
