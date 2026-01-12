@@ -18,7 +18,7 @@ const provider = new GoogleAuthProvider();
 const editor = document.getElementById('main-editor');
 let currentUser = null;
 
-// PAGE ENGINE
+// --- PAGE FACTORY ---
 function checkPageOverflow(currentPage) {
     const PAGE_LIMIT = 960; 
     if (currentPage.scrollHeight > PAGE_LIMIT) {
@@ -32,7 +32,7 @@ function checkPageOverflow(currentPage) {
     return null;
 }
 
-// UI HANDLERS
+// --- GLOBAL HANDLERS ---
 window.toggleLegend = () => {
     const leg = document.getElementById('legend-overlay');
     leg.style.display = (leg.style.display === 'flex') ? 'none' : 'flex';
@@ -45,7 +45,8 @@ onAuthStateChanged(auth, (user) => {
         document.getElementById('auth-overlay').style.display = 'none';
         onSnapshot(doc(db, "scripts", user.uid), (snap) => {
             if (snap.exists() && !editor.contains(document.activeElement)) {
-                editor.innerHTML = snap.data().content || '<div class="paper-page" contenteditable="true"><div class="line scene-heading" data-type="scene-heading">INT. NEW PROJECT - DAY</div></div>';
+                editor.innerHTML = snap.data().content || editor.innerHTML;
+                updateStats();
             }
         });
     } else {
@@ -75,9 +76,11 @@ document.addEventListener('keydown', (e) => {
         sel.removeAllRanges(); sel.addRange(range);
         checkPageOverflow(currentPage);
         saveToCloud();
+        updateStats();
     }
 });
 
+// Button Bindings
 document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
 document.getElementById('logout-btn').onclick = () => signOut(auth);
 document.getElementById('help-btn').onclick = window.toggleLegend;
@@ -92,4 +95,10 @@ async function saveToCloud() {
         await setDoc(doc(db, "scripts", currentUser.uid), { content: editor.innerHTML }, { merge: true });
     }
 }
+
+function updateStats() {
+    document.getElementById('stat-pages').innerText = document.querySelectorAll('.paper-page').length;
+    document.getElementById('stat-words').innerText = editor.innerText.trim().split(/\s+/).length;
+}
+
 editor.addEventListener('input', saveToCloud);
