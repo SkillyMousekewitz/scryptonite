@@ -17,27 +17,35 @@ const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 let currentUser = null;
 
+// Correct target for the Page Factory model
 const editor = document.getElementById('main-editor');
 const elements = ["scene-heading", "action", "character", "parenthetical", "dialogue", "transition"];
 
 // --- 1. THE PAGE FACTORY ENGINE ---
 function checkPageOverflow(currentPage) {
-    const PAGE_LIMIT = 960; // 11-inch limit in pixels
+    const PAGE_LIMIT = 960; // Standard 11-inch limit in pixels
+    
     if (currentPage.scrollHeight > PAGE_LIMIT) {
         let nextP = currentPage.nextElementSibling;
+        
+        // If no page exists or next element isn't a paper-page, create one
         if (!nextP || !nextP.classList.contains('paper-page')) {
             nextP = document.createElement('div');
             nextP.className = 'paper-page';
             nextP.contentEditable = true;
             currentPage.after(nextP);
         }
-        nextP.prepend(currentPage.lastElementChild);
+
+        const lastElement = currentPage.lastElementChild;
+        
+        // Move the overflowing element (or dialogue-group) to the next page
+        nextP.prepend(lastElement);
         return nextP;
     }
     return null;
 }
 
-// --- 2. AUTH & SYNC ---
+// --- 2. AUTH & SYNC ENGINE ---
 onAuthStateChanged(auth, (user) => {
     if (user) {
         currentUser = user;
@@ -50,8 +58,10 @@ onAuthStateChanged(auth, (user) => {
 
 function startSync(uid) {
     onSnapshot(doc(db, "scripts", uid), (snap) => {
+        // Only update if the user isn't currently typing to avoid cursor jumps
         if (snap.exists() && !editor.contains(document.activeElement)) {
             const data = snap.data();
+            // Restore pages or create the first page if empty
             editor.innerHTML = data.content || '<div class="paper-page" contenteditable="true"><div class="line scene-heading" data-type="scene-heading">INT. NEW PROJECT - DAY</div></div>';
             document.getElementById('beat-container').innerHTML = data.beats || "<b>BEAT SHEET:</b>";
             document.getElementById('char-container').innerHTML = data.chars || "<b>CHARACTERS:</b>";
@@ -64,11 +74,10 @@ function startSync(uid) {
 // --- 3. KEYBOARD ENGINE (GLOBAL LISTENER) ---
 document.addEventListener('keydown', (e) => {
     const sel = window.getSelection();
-    // Use closest to find the page/line regardless of depth
-    const currentPage = sel.anchorNode?.parentElement?.closest('.paper-page');
     const line = sel.anchorNode?.parentElement?.closest('.line');
+    const currentPage = sel.anchorNode?.parentElement?.closest('.paper-page');
 
-    // COMMANDS (Ctrl + / and Ctrl + \)
+    // Help & Focus Mode Shortcuts
     if (e.ctrlKey && (e.key === '/' || e.code === 'Slash')) { 
         e.preventDefault(); 
         window.toggleLegend(); 
@@ -80,7 +89,7 @@ document.addEventListener('keydown', (e) => {
         return; 
     }
 
-    if (!currentPage || !line) return;
+    if (!line || !currentPage) return;
 
     if (e.key === 'Tab') {
         e.preventDefault();
@@ -92,14 +101,26 @@ document.addEventListener('keydown', (e) => {
 
     if (e.key === 'Enter') {
         e.preventDefault();
-        const nextType = { "character": "dialogue", "scene-heading": "action", "dialogue": "action" }[line.dataset.type] || "action";
+        const currentType = line.dataset.type;
+        const nextType = { "character": "dialogue", "scene-heading": "action", "dialogue": "action" }[currentType] || "action";
         
         const newLine = document.createElement('div');
         newLine.className = `line ${nextType}`;
         newLine.dataset.type = nextType;
-        newLine.innerHTML = "&#8203;";
+        newLine.innerHTML = "&#8203;"; // Zero-width space for cursor focus
 
-        line.after(newLine);
+        // DIALOGUE GUARD: Keeps speaker and dialogue together
+        if (currentType === 'character') {
+            const group = document.createElement('div');
+            group.className = 'dialogue-group';
+            line.after(group);
+            group.appendChild(line);
+            group.appendChild(newLine);
+        } else if (line.parentElement.classList.contains('dialogue-group')) {
+            line.after(newLine);
+        } else {
+            line.after(newLine);
+        }
 
         const range = document.createRange();
         range.setStart(newLine.firstChild, 0);
@@ -107,6 +128,7 @@ document.addEventListener('keydown', (e) => {
         sel.removeAllRanges();
         sel.addRange(range);
 
+        // Check if current page is full and spawn new page if needed
         const jumpedPage = checkPageOverflow(currentPage);
         if (jumpedPage) {
             const newRange = document.createRange();
@@ -116,10 +138,12 @@ document.addEventListener('keydown', (e) => {
             sel.addRange(newRange);
         }
         updateStats();
+        saveToCloud();
     }
 });
 
-// --- 4. EXPLICITLY GLOBAL FUNCTIONS ---
+// --- 4. GLOBAL UI FUNCTIONS ---
+// Functions must be attached to window to work with HTML onclick in modules
 window.toggleLegend = () => {
     const leg = document.getElementById('legend-overlay');
     leg.style.display = (leg.style.display === 'flex') ? 'none' : 'flex';
@@ -134,15 +158,15 @@ window.switchTab = (tab) => {
 
 window.exportToPDF = () => {
     html2pdf().set({
-        margin: [1, 0, 1, 0],
+        margin: [1, 0, 1, 0], // Enforces 1" top/bottom in PDF
         filename: 'script.pdf',
         html2canvas: { scale: 2 },
         jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] } // Respects CSS Dialogue Guard
     }).from(editor).save();
 };
 
-// --- 5. DATA MANAGEMENT ---
+// --- 5. DATA & UI UPDATES ---
 async function saveToCloud() {
     if (currentUser) {
         await setDoc(doc(db, "scripts", currentUser.uid), {
@@ -155,7 +179,7 @@ async function saveToCloud() {
 
 function updateStats() {
     const pages = document.querySelectorAll('.paper-page').length;
-    const words = editor.innerText.trim().split(/\s+/).length;
+    const words = editor.innerText.trim().split(/\s+/).filter(w => w.length > 0).length;
     document.getElementById('stat-pages').innerText = pages;
     document.getElementById('stat-words').innerText = words;
 }
@@ -172,7 +196,7 @@ function updateNavigator() {
     });
 }
 
-// Attach listeners to buttons
+// Sidebar Button Listeners
 document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
 document.getElementById('logout-btn').onclick = () => signOut(auth);
 document.getElementById('help-btn').onclick = window.toggleLegend;
