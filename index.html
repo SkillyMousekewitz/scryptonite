@@ -45,28 +45,31 @@
         /* THE SCROLLABLE AREA */
         #main-editor { 
             flex-grow: 1; flex-shrink: 1; min-width: 0; 
-            overflow-y: auto; display: flex; flex-direction: column; align-items: center; 
+            overflow-y: auto; display: block; /* Changed from flex to block for stability */
             padding: 40px 0; 
+            text-align: center; /* Centers the child #script-container */
         }
 
-        /* THE PAPER ENGINE: FIXING THE LEAK */
+        /* THE PAPER ENGINE: FORCED EXPANSION */
         #script-container { 
+            display: inline-block; /* Allows the container to grow with its content */
+            text-align: left;
             width: 8.5in; 
             min-height: 11in; 
-            height: auto !important; /* Forces the paper to grow with text */
-            display: block;
-            background-color: white; 
+            height: auto !important; 
+            background-color: white !important; 
+            /* Page break line every 11 inches */
             background-image: linear-gradient(to bottom, transparent 10.99in, var(--page-break-color) 11in);
             background-size: 100% 11in;
             background-repeat: repeat-y;
             padding: 1in 1in 1in 1.5in; 
-            box-shadow: 0 0 30px rgba(0,0,0,0.15); 
+            box-shadow: 0 0 30px rgba(0,0,0,0.2); 
             font-family: 'Courier Prime', Courier, monospace; 
             font-size: 12pt; 
             line-height: 1.2; 
             outline: none;
             color: #000;
-            margin-bottom: 300px; /* Buffer at the bottom */
+            margin-bottom: 400px; /* Large bottom buffer */
             box-sizing: border-box;
         }
 
@@ -80,7 +83,6 @@
         .transition { text-transform: uppercase; margin-left: 4.5in; margin-top: 12px; }
         .script-note { background: rgba(253, 250, 114, 0.4); color: #000; padding: 10px; margin: 10px 0; border-left: 4px solid #f1c40f; font-family: sans-serif; font-size: 0.85rem; font-style: italic; }
 
-        /* OVERLAYS */
         body.focus-mode #left-sidebar { margin-left: calc(var(--sidebar-width) * -1); }
         body.focus-mode #right-sidebar { margin-right: calc(var(--right-width) * -1); }
         
