@@ -36,33 +36,35 @@ body {
 body.focus-mode #left-sidebar { margin-left: calc(var(--sidebar-width) * -1); }
 body.focus-mode #right-sidebar { margin-right: calc(var(--right-width) * -1); }
 
-/* 2. THE PAGE FACTORY ENGINE */
+/* THE PHYSICAL SHEET OF PAPER (CRITICAL FIX) */
+.paper-page { 
+    display: block !important;
+    width: 8.5in !important; 
+    height: 11in !important; 
+    min-height: 11in !important;
+    background-color: white !important; /* This makes it visible */
+    margin: 0 auto 30px auto !important; 
+    padding: 1in 1in 1in 1.5in !important; 
+    box-shadow: 0 0 40px rgba(0,0,0,0.5) !important; 
+    font-family: 'Courier Prime', Courier, monospace !important; 
+    font-size: 12pt !important; 
+    line-height: 1.2 !important; 
+    color: #000 !important;
+    outline: none !important;
+    box-sizing: border-box !important; 
+    overflow: hidden !important;
+    flex-shrink: 0 !important;
+}
+
 #main-editor { 
     flex-grow: 1; 
     overflow-y: auto; 
-    background: var(--desk-color); 
+    background: #2d3436; /* The Dark Desk */
     padding: 40px 0; 
     display: flex; 
     flex-direction: column; 
     align-items: center;
-}
-
-.paper-page { 
-    width: 8.5in; 
-    height: 11in; 
-    min-height: 11in;
-    background: white !important; 
-    margin-bottom: 30px; 
-    padding: 1in 1in 1in 1.5in; /* 1.5" Left for binding, 1" Top/Bottom/Right */
-    box-shadow: 0 0 20px rgba(0,0,0,0.5); 
-    font-family: 'Courier Prime', Courier, monospace; 
-    font-size: 12pt; 
-    line-height: 1.2; 
-    outline: none; 
-    color: #000;
-    box-sizing: border-box; 
-    flex-shrink: 0; 
-    overflow: hidden; /* Hard physical boundary */
+    width: 100%;
 }
 
 /* 3. SCREENPLAY ELEMENTS */
