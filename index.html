@@ -25,12 +25,12 @@
             padding: 40px 0; display: flex; flex-direction: column; align-items: center; 
         }
 
-        /* HARD-CODED PAPER STYLING - FORCED VISIBILITY */
+        /* THE FIX: This dot (.) tells the browser to style the class "paper-page" */
         .paper-page { 
             display: block !important;
             width: 8.5in !important; 
             height: 11in !important; 
-            background-color: #ffffff !important; /* Pure White */
+            background-color: #ffffff !important; 
             margin: 0 auto 30px auto !important;
             padding: 1in 1in 1in 1.5in !important; 
             box-shadow: 0 0 30px rgba(0,0,0,0.7) !important; 
@@ -61,7 +61,6 @@
     </style>
 </head>
 <body>
-
     <div id="auth-overlay">
         <div class="card p-5 shadow text-center" style="width: 400px; border-radius: 20px;">
             <h1 style="font-weight: 800;">SCRYPT<span style="color:var(--accent)">ONITE</span></h1>
