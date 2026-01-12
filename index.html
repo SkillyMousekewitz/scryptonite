@@ -19,30 +19,25 @@
 
         body { 
             margin: 0; display: flex; flex-direction: row; height: 100vh; width: 100vw;
-            background: #f4f7f6; transition: 0.3s; overflow: hidden; 
+            background: #f4f7f6; overflow: hidden; 
         }
 
-        #auth-overlay, #legend-overlay { 
-            position: fixed; inset: 0; z-index: 9999; 
-            display: flex; align-items: center; justify-content: center; 
-        }
-        #auth-overlay { background: #f4f7f6; }
-        #legend-overlay { background: rgba(0,0,0,0.85); z-index: 10001; display: none; cursor: pointer; }
-
+        /* SIDEBARS */
         #left-sidebar, #right-sidebar { 
             background: var(--bg-sidebar); color: #b2bec3; 
             display: flex; flex-direction: column; padding: 20px; z-index: 100; 
-            transition: 0.3s ease; flex-shrink: 0;
+            flex-shrink: 0;
         }
         #left-sidebar { width: var(--sidebar-width); border-right: 1px solid #2d3436; }
         #right-sidebar { width: var(--right-width); border-left: 1px solid #2d3436; }
 
+        /* THE DESK (SCROLLABLE AREA) */
         #main-editor { 
             flex-grow: 1; overflow-y: auto; background: var(--desk-color); 
             padding: 40px 0; display: flex; flex-direction: column; align-items: center;
         }
 
-        /* THE INDIVIDUAL PAGE */
+        /* INDIVIDUAL PAPER SHEET */
         .paper-page { 
             width: 8.5in; height: 11in; min-height: 11in;
             background: white; margin-bottom: 30px; 
@@ -53,23 +48,24 @@
             box-sizing: border-box; flex-shrink: 0; overflow: hidden;
         }
 
+        /* ELEMENTS */
         .line { min-height: 1.2em; outline: none; margin: 0; width: 100%; word-wrap: break-word; }
         .scene-heading { text-transform: uppercase; font-weight: bold; margin-top: 24pt; }
         .action { margin-top: 12pt; }
         .character { margin-left: 2in; width: 4in; margin-top: 12pt; text-transform: uppercase; }
-        .parenthetical { margin-left: 1.5in; width: 2.5in; }
         .dialogue { margin-left: 1in; width: 3.5in; }
-        .transition { text-transform: uppercase; margin-left: 4.5in; margin-top: 12pt; }
 
-        .nav-item { padding: 8px; font-size: 0.8rem; cursor: pointer; border-bottom: 1px solid #2d3436; text-transform: uppercase; border-radius: 4px; }
-        .nav-item:hover { color: white; background: #2d3436; }
-        .story-box { background: rgba(255,255,255,0.05); min-height: 400px; font-size: 0.85rem; border: 1px dashed #444; padding: 15px; border-radius: 8px; outline: none; color: #ddd; }
-        kbd { background-color: #333; border-radius: 3px; color: var(--accent); padding: 2px 4px; }
+        /* UI */
+        #auth-overlay, #legend-overlay { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        #auth-overlay { background: #f4f7f6; }
+        #legend-overlay { background: rgba(0,0,0,0.85); display: none; }
+        .story-box { background: rgba(255,255,255,0.05); min-height: 400px; padding: 15px; border-radius: 8px; color: #ddd; outline: none; border: 1px dashed #444; }
+        kbd { background-color: #333; color: var(--accent); padding: 2px 4px; border-radius: 3px; }
 
         @media print {
-            #left-sidebar, #right-sidebar, #auth-overlay, #legend-overlay { display: none !important; }
+            #left-sidebar, #right-sidebar, #auth-overlay { display: none !important; }
             #main-editor { padding: 0; background: white; }
-            .paper-page { box-shadow: none; border: none; margin: 0; page-break-after: always; }
+            .paper-page { box-shadow: none; margin: 0; page-break-after: always; }
         }
     </style>
 </head>
@@ -85,7 +81,7 @@
     <div id="left-sidebar">
         <h6 class="mb-3 text-muted">SCENES</h6>
         <div id="scene-list" class="flex-grow-1 overflow-auto mb-3"></div>
-        <div class="small mb-3">Pages: <span id="stat-pages">0</span> | Words: <span id="stat-words">0</span></div>
+        <div class="small mb-3">Pages: <span id="stat-pages">1</span> | Words: <span id="stat-words">0</span></div>
         <div class="d-grid gap-2">
             <button class="btn btn-outline-info btn-sm" onclick="toggleLegend()">Help</button>
             <button class="btn btn-success btn-sm" onclick="exportToPDF()">Export PDF</button>
@@ -93,15 +89,16 @@
         </div>
     </div>
 
-    <div id="main-editor"></div>
+    <div id="main-editor">
+        </div>
 
     <div id="right-sidebar">
         <div class="btn-group mb-3 w-100">
             <button class="btn btn-sm btn-info" onclick="switchTab('beats')">BEATS</button>
             <button class="btn btn-sm btn-outline-info" onclick="switchTab('chars')">CHARS</button>
         </div>
-        <div id="tab-beats"><div id="beat-container" contenteditable="true" class="story-box"><b>BEATS:</b><br></div></div>
-        <div id="tab-chars" style="display:none;"><div id="char-container" contenteditable="true" class="story-box"><b>CHARS:</b><br></div></div>
+        <div id="tab-beats"><div id="beat-container" contenteditable="true" class="story-box"><b>BEATS:</b></div></div>
+        <div id="tab-chars" style="display:none;"><div id="char-container" contenteditable="true" class="story-box"><b>CHARS:</b></div></div>
     </div>
 
     <script type="module">
@@ -149,16 +146,12 @@
             return page;
         }
 
-        // AUTO-OVERFLOW LOGIC
         function checkOverflow(page) {
-            const PAGE_HEIGHT_LIMIT = 960; // Max pixels for content in 11in page
-            if (page.scrollHeight > PAGE_HEIGHT_LIMIT) {
+            const PAGE_LIMIT = 960; 
+            if (page.scrollHeight > PAGE_LIMIT) {
                 let nextP = page.nextElementSibling;
-                if (!nextP || !nextP.classList.contains('paper-page')) {
-                    nextP = createNewPage();
-                }
-                const lastLine = page.lastElementChild;
-                nextP.prepend(lastLine);
+                if (!nextP) nextP = createNewPage();
+                nextP.prepend(page.lastElementChild);
                 return true;
             }
             return false;
@@ -175,12 +168,11 @@
                 let idx = (elements.indexOf(line.dataset.type) + (e.shiftKey ? -1 : 1) + elements.length) % elements.length;
                 line.className = `line ${elements[idx]}`;
                 line.dataset.type = elements[idx];
-                updateNavigator();
             }
 
             if (e.key === 'Enter') {
                 e.preventDefault();
-                const nextType = { "character": "dialogue", "scene-heading": "action", "dialogue": "action" }[line.dataset.type] || "action";
+                const nextType = { "character": "dialogue", "scene-heading": "action" }[line.dataset.type] || "action";
                 const newLine = document.createElement('div');
                 newLine.className = `line ${nextType}`;
                 newLine.dataset.type = nextType;
@@ -190,18 +182,15 @@
                 const range = document.createRange();
                 range.setStart(newLine.firstChild, 0);
                 range.collapse(true);
-                sel.removeAllRanges();
-                sel.addRange(range);
-
-                if (checkOverflow(currentPage)) {
-                    newLine.scrollIntoView();
-                }
+                sel.removeAllRanges(); sel.addRange(range);
+                checkOverflow(currentPage);
+                updateStats();
             }
         });
 
         editor.addEventListener('input', (e) => {
-            const currentPage = window.getSelection().anchorNode?.parentElement?.closest('.paper-page');
-            if (currentPage) checkOverflow(currentPage);
+            const page = window.getSelection().anchorNode?.parentElement?.closest('.paper-page');
+            if (page) checkOverflow(page);
             updateStats();
             saveToCloud();
         });
@@ -220,10 +209,11 @@
             onSnapshot(doc(db, "scripts", uid), (snap) => {
                 if (snap.exists() && document.activeElement.closest('.paper-page') === null) {
                     const data = snap.data();
-                    editor.innerHTML = data.content || '<div class="paper-page" contenteditable="true"><div class="line scene-heading" data-type="scene-heading">&#8203;</div></div>';
-                    updateStats();
-                    updateNavigator();
+                    editor.innerHTML = data.content || '';
                 }
+                // FORCED INITIALIZER: If editor is still empty after sync, build page 1
+                if (editor.children.length === 0) createNewPage();
+                updateStats();
             });
         }
 
@@ -232,26 +222,12 @@
             document.getElementById('stat-words').innerText = editor.innerText.trim().split(/\s+/).length;
         }
 
-        function updateNavigator() {
-            const list = document.getElementById('scene-list');
-            list.innerHTML = "";
-            editor.querySelectorAll('.scene-heading').forEach(s => {
-                const item = document.createElement('div');
-                item.className = 'nav-item mb-1';
-                item.innerText = s.innerText.trim() || "NEW SCENE";
-                item.onclick = () => s.scrollIntoView({ behavior: 'smooth' });
-                list.appendChild(item);
-            });
-        }
-
         window.toggleLegend = () => {
             const leg = document.getElementById('legend-overlay');
             leg.style.display = leg.style.display === 'flex' ? 'none' : 'flex';
         };
 
-        window.exportToPDF = () => {
-            html2pdf().from(editor).save('script.pdf');
-        };
+        window.exportToPDF = () => { html2pdf().from(editor).save('script.pdf'); };
 
         window.switchTab = (tab) => {
             document.getElementById('tab-beats').style.display = tab === 'beats' ? 'block' : 'none';
