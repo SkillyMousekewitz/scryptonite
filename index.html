@@ -56,11 +56,11 @@
         .transition { text-transform: uppercase; margin-left: 4.5in; margin-top: 12px; }
         .script-note { background: rgba(253, 250, 114, 0.2); color: var(--text-main); padding: 10px; margin: 10px 0; border-left: 4px solid #f1c40f; font-family: sans-serif; font-size: 0.85rem; font-style: italic; }
 
-        /* MODES & OVERLAYS */
+        /* OVERLAYS */
         body.focus-mode #sidebar { margin-left: calc(var(--sidebar-width) * -1); }
         #auth-overlay, #tutorial-overlay, #legend-overlay { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; }
         #auth-overlay, #tutorial-overlay { background: var(--bg-main); }
-        #legend-overlay { background: rgba(0,0,0,0.9); z-index: 10001; cursor: pointer; }
+        #legend-overlay { background: rgba(0,0,0,0.85); z-index: 10001; cursor: pointer; }
 
         @media print {
             #sidebar, .script-note, #auth-overlay, #tutorial-overlay, #legend-overlay { display: none !important; }
@@ -90,10 +90,10 @@
         <div class="card p-4 shadow-lg bg-dark text-white" style="max-width: 450px;">
             <h4>Welcome to Scryptonite</h4>
             <hr>
-            <p><strong>Tab:</strong> Change line type</p>
-            <p><strong>Enter:</strong> Smart break</p>
+            <p><strong>Tab:</strong> Cycle line types</p>
+            <p><strong>Enter:</strong> Smart Next Line</p>
             <p><strong>Ctrl + \ :</strong> Focus Mode</p>
-            <p><strong>Ctrl + / :</strong> Help Legend</p>
+            <p><strong>Ctrl + / :</strong> Command Legend</p>
             <button class="btn btn-info w-100 mt-3" onclick="closeTutorial()">Start Writing</button>
         </div>
     </div>
@@ -101,4 +101,244 @@
     <div id="legend-overlay" style="display:none;" onclick="toggleLegend()">
         <div class="card bg-dark text-white p-4 border-secondary shadow-lg" style="width: 500px; cursor:default;" onclick="event.stopPropagation()">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="mb-0 text-info">SCRYPT<span class="text-white">ONITE</span> COMMAND
+                <h5 class="mb-0 text-info">SCRYPT<span class="text-white">ONITE</span> COMMANDS</h5>
+                <button class="btn-close btn-close-white" onclick="toggleLegend()"></button>
+            </div>
+            <table class="table table-dark table-hover mb-0" style="font-size: 0.9rem;">
+                <thead><tr class="text-muted"><th>ACTION</th><th>RESULT</th></tr></thead>
+                <tbody>
+                    <tr><td><kbd>Tab</kbd></td><td>Cycle: Heading → Action → Char → Dial</td></tr>
+                    <tr><td><kbd>Enter</kbd></td><td>Smart-jump to next element</td></tr>
+                    <tr><td><kbd>Ctrl</kbd> + <kbd>\</kbd></td><td>Toggle Focus Mode (Sidebar)</td></tr>
+                    <tr><td><kbd>Ctrl</kbd> + <kbd>/</kbd></td><td>Toggle this Command Legend</td></tr>
+                    <tr><td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>N</kbd></td><td>Add Private Art/Script Note</td></tr>
+                </tbody>
+            </table>
+            <div class="text-center mt-3 text-muted small">Click anywhere outside to close</div>
+        </div>
+    </div>
+
+    <div id="sidebar">
+        <h6 class="mb-3" style="letter-spacing: 2px; color: #555;">SCENES</h6>
+        <div id="scene-list" class="flex-grow-1 overflow-auto mb-3"></div>
+        
+        <h6 class="mb-2" style="letter-spacing: 2px; color: #555;">STATS</h6>
+        <div class="mb-4 small">
+            <div>Words: <span id="stat-words">0</span></div>
+            <div>Runtime: <span id="stat-time">0m 0s</span></div>
+        </div>
+
+        <div class="d-grid gap-2 mb-4">
+            <button class="btn btn-outline-secondary btn-sm" onclick="toggleDarkMode()">Theme</button>
+            <button class="btn btn-outline-secondary btn-sm" onclick="toggleFocusMode()">Focus Mode</button>
+            <button class="btn btn-outline-warning btn-sm" onclick="saveVersion()">Snapshot</button>
+            <button class="btn btn-outline-info btn-sm" onclick="showVersionHistory()">History</button>
+            <button class="btn btn-outline-info btn-sm" onclick="toggleLegend()">Help (Ctrl+/)</button>
+            <button class="btn btn-success btn-sm" onclick="exportToPDF()">PDF</button>
+            <button class="btn btn-info btn-sm" onclick="exportToFountain()">Fountain</button>
+            <button class="btn btn-link btn-sm text-danger mt-3" onclick="signOutUser()">Sign Out</button>
+        </div>
+    </div>
+
+    <div id="main-editor">
+        <div id="script-container" contenteditable="true" spellcheck="true">
+            <div class="line scene-heading" data-type="scene-heading">INT. NEW PROJECT - DAY</div>
+            <div class="line action" data-type="action">Begin your masterpiece...</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, addDoc, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCMJ8mkBdyhLDbC6RmaVK9zWl-XSms6RoA",
+            authDomain: "scryptonite-6a340.firebaseapp.com",
+            projectId: "scryptonite-6a340",
+            storageBucket: "scryptonite-6a340.firebasestorage.app",
+            messagingSenderId: "875468928578",
+            appId: "1:875468928578:web:524ae574d4c84593a49fdb",
+            measurementId: "G-RPGWSZXJYF"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+        let currentUser = null;
+        const container = document.getElementById('script-container');
+        const elements = ["scene-heading", "action", "character", "parenthetical", "dialogue", "transition"];
+
+        // --- AUTH ---
+        document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
+        window.signOutUser = () => signOut(auth);
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('auth-overlay').style.display = 'none';
+                checkTutorial();
+                startSync(user.uid);
+            } else {
+                document.getElementById('auth-overlay').style.display = 'flex';
+            }
+        });
+
+        // --- CORE ENGINE ---
+        container.addEventListener('keydown', (e) => {
+            const sel = window.getSelection();
+            const line = sel.anchorNode?.parentElement?.closest('.line');
+            
+            // KEYBOARD COMMANDS
+            if (e.ctrlKey && (e.key === '/' || e.code === 'Slash')) { e.preventDefault(); toggleLegend(); return; }
+            if (e.ctrlKey && e.key === '\\') { e.preventDefault(); toggleFocusMode(); return; }
+            if (e.ctrlKey && e.shiftKey && e.key === 'N') { e.preventDefault(); insertNote(line); return; }
+            
+            if (!line) return;
+
+            // TAB ELEMENT CYCLE
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                let idx = elements.indexOf(line.dataset.type);
+                idx = e.shiftKey ? (idx - 1 + elements.length) % elements.length : (idx + 1) % elements.length;
+                line.className = `line ${elements[idx]}`;
+                line.dataset.type = elements[idx];
+                updateNavigator();
+            }
+
+            // SMART ENTER
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const currentType = line.dataset.type;
+                const nextType = { "character": "dialogue", "scene-heading": "action", "dialogue": "action", "parenthetical": "dialogue" }[currentType] || "action";
+                const newLine = document.createElement('div');
+                newLine.className = `line ${nextType}`;
+                newLine.dataset.type = nextType;
+                newLine.innerHTML = "<br>"; 
+                line.after(newLine);
+                const range = document.createRange();
+                range.setStart(newLine, 0);
+                range.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(range);
+            }
+        });
+
+        container.addEventListener('input', () => {
+            autoCapitalize();
+            updateStats();
+            saveToCloud();
+        });
+
+        // --- FUNCTIONS ---
+        window.toggleLegend = () => {
+            const legend = document.getElementById('legend-overlay');
+            legend.style.display = (legend.style.display === 'none' || legend.style.display === '') ? 'flex' : 'none';
+        };
+
+        window.toggleDarkMode = () => document.body.classList.toggle('dark-mode');
+        window.toggleFocusMode = () => document.body.classList.toggle('focus-mode');
+
+        function autoCapitalize() {
+            const sel = window.getSelection();
+            const line = sel.anchorNode?.parentElement?.closest('.line');
+            if (line && (line.dataset.type === 'character' || line.dataset.type === 'scene-heading')) {
+                const pos = sel.anchorOffset;
+                line.innerText = line.innerText.toUpperCase();
+                const range = document.createRange();
+                if (line.firstChild) {
+                    range.setStart(line.firstChild, Math.min(pos, line.innerText.length));
+                    range.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                }
+            }
+        }
+
+        function updateNavigator() {
+            const list = document.getElementById('scene-list');
+            list.innerHTML = "";
+            container.querySelectorAll('.scene-heading').forEach((s, i) => {
+                const item = document.createElement('div');
+                item.className = 'nav-item mb-1';
+                item.innerText = s.innerText || "NEW SCENE";
+                item.onclick = () => s.scrollIntoView({ behavior: 'smooth' });
+                list.appendChild(item);
+            });
+        }
+
+        window.saveVersion = async () => {
+            const name = prompt("Name this snapshot:");
+            if (!name) return;
+            await addDoc(collection(db, "scripts", currentUser.uid, "snapshots"), {
+                name, content: container.innerHTML, timestamp: new Date()
+            });
+            alert("Snapshot saved!");
+        };
+
+        window.showVersionHistory = async () => {
+            const q = query(collection(db, "scripts", currentUser.uid, "snapshots"), orderBy("timestamp", "desc"));
+            const snap = await getDocs(q);
+            let html = "<h6 class='text-info mt-2'>HISTORY</h6>";
+            snap.forEach(doc => {
+                html += `<div class="nav-item mb-2" onclick="restoreVersion('${doc.id}')">${doc.data().name}<br><small>${doc.data().timestamp.toDate().toLocaleDateString()}</small></div>`;
+            });
+            document.getElementById('scene-list').innerHTML = html;
+        };
+
+        window.exportToPDF = () => {
+            const opt = { margin: [1, 1, 1, 1.5], filename: 'script.pdf', jsPDF: { unit: 'in', format: 'letter' } };
+            html2pdf().set(opt).from(container).save();
+        };
+
+        window.exportToFountain = () => {
+            let text = "";
+            container.querySelectorAll('.line').forEach(l => {
+                const type = l.dataset.type;
+                const val = l.innerText.trim();
+                if (!val) return;
+                if (type === 'scene-heading') text += `\n${val.toUpperCase()}\n\n`;
+                else if (type === 'character') text += `\n${val.toUpperCase()}\n`;
+                else if (type === 'parenthetical') text += `(${val})\n`;
+                else text += `${val}\n\n`;
+            });
+            const blob = new Blob([text], {type: "text/plain"});
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = "script.fountain";
+            a.click();
+        };
+
+        function insertNote(line) {
+            const note = document.createElement('div');
+            note.className = 'script-note';
+            note.contentEditable = true;
+            note.innerText = "[ NOTE: Art Reminder ]";
+            line.after(note);
+        }
+
+        function updateStats() {
+            const words = container.innerText.trim().split(/\s+/).length;
+            const pages = container.scrollHeight / 1056; 
+            document.getElementById('stat-words').innerText = words;
+            document.getElementById('stat-time').innerText = `${Math.floor(pages)}m ${Math.round((pages % 1) * 60)}s`;
+        }
+
+        async function saveToCloud() { if (currentUser) await setDoc(doc(db, "scripts", currentUser.uid), { content: container.innerHTML }, { merge: true }); }
+        
+        function startSync(uid) {
+            onSnapshot(doc(db, "scripts", uid), (doc) => {
+                if (doc.exists() && document.activeElement !== container) {
+                    container.innerHTML = doc.data().content;
+                    updateNavigator();
+                    updateStats();
+                }
+            });
+        }
+
+        function checkTutorial() { if (!localStorage.getItem('scryptonite_tutorial')) document.getElementById('tutorial-overlay').style.display = 'flex'; }
+        window.closeTutorial = () => { document.getElementById('tutorial-overlay').style.display = 'none'; localStorage.setItem('scryptonite_tutorial', 'true'); };
+    </script>
+</body>
+</html>
