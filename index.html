@@ -9,7 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
-        /* 1. CORE THEME & VARIABLES */
+        /* 1. CORE THEME */
         :root {
             --sidebar-width: 260px;
             --right-width: 300px;
@@ -27,19 +27,12 @@
             --desk-color: #1a1c1e;
         }
 
-        /* 2. LAYOUT ENGINE - CRITICAL FIX FOR SIDEBARS */
         body { 
-            margin: 0; 
-            display: flex; 
-            flex-direction: row; 
-            height: 100vh; 
-            width: 100vw;
-            background: var(--bg-main); 
-            transition: 0.3s; 
-            overflow: hidden; 
+            margin: 0; display: flex; flex-direction: row; height: 100vh; width: 100vw;
+            background: var(--bg-main); transition: 0.3s; overflow: hidden; 
         }
 
-        /* 3. OVERLAYS */
+        /* 2. OVERLAYS */
         #auth-overlay, #legend-overlay { 
             position: fixed; inset: 0; z-index: 9999; 
             display: flex; align-items: center; justify-content: center; 
@@ -47,12 +40,11 @@
         #auth-overlay { background: var(--bg-main); }
         #legend-overlay { background: rgba(0,0,0,0.85); z-index: 10001; display: none; cursor: pointer; }
 
-        /* 4. SIDEBARS */
+        /* 3. SIDEBARS */
         #left-sidebar, #right-sidebar { 
-            background: var(--bg-sidebar); 
-            color: var(--text-sidebar); 
-            display: flex; flex-direction: column; 
-            padding: 20px; z-index: 100; transition: 0.3s ease; flex-shrink: 0;
+            background: var(--bg-sidebar); color: var(--text-sidebar); 
+            display: flex; flex-direction: column; padding: 20px; z-index: 100; 
+            transition: 0.3s ease; flex-shrink: 0;
         }
         #left-sidebar { width: var(--sidebar-width); border-right: 1px solid #2d3436; }
         #right-sidebar { width: var(--right-width); border-left: 1px solid #2d3436; }
@@ -60,52 +52,37 @@
         body.focus-mode #left-sidebar { margin-left: calc(var(--sidebar-width) * -1); }
         body.focus-mode #right-sidebar { margin-right: calc(var(--right-width) * -1); }
 
-/* THE PAGE WRAPPER (The Grey Desk) */
-#main-editor { 
-    flex-grow: 1; 
-    overflow-y: auto; 
-    background: var(--desk-color);
-    padding: 40px 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
+        /* 4. THE TRUE PAGES EDITOR */
+        #main-editor { 
+            flex-grow: 1; overflow-y: auto; overflow-x: hidden;
+            background: var(--desk-color); padding: 40px 0; 
+            display: flex; flex-direction: column; align-items: center;
+        }
 
-/* THE INDIVIDUAL PAGE OBJECT */
-.paper-page { 
-    width: 8.5in; 
-    height: 11in; 
-    background: white; 
-    margin-bottom: 20px; 
-    box-shadow: 0 0 15px rgba(0,0,0,0.3);
-    padding: 1in 1in 1in 1.5in; 
-    font-family: 'Courier Prime', Courier, monospace; 
-    font-size: 12pt; 
-    line-height: 1.2; 
-    outline: none;
-    color: #000;
-    box-sizing: border-box;
-    flex-shrink: 0; /* Prevents pages from squishing */
-    position: relative;
-    overflow: hidden; /* Keeps text within the boundaries */
-}
+        /* THE INDIVIDUAL PAGE CONTAINER */
+        .paper-page { 
+            width: 8.5in; 
+            height: 11in; 
+            min-height: 11in;
+            background: white; 
+            margin-bottom: 30px; 
+            padding: 1in 1in 1in 1.5in; 
+            box-shadow: 0 0 20px rgba(0,0,0,0.5); 
+            font-family: 'Courier Prime', Courier, monospace; 
+            font-size: 12pt; line-height: 1.2; outline: none; color: #000;
+            box-sizing: border-box; flex-shrink: 0; position: relative; overflow: hidden;
+        }
 
-/* MARGIN PERSISTENCE */
-.line { min-height: 1.2em; position: relative; margin: 0; width: 100%; }
-.scene-heading { text-transform: uppercase; font-weight: bold; margin-top: 24pt; }
-.character { margin-left: 2in; width: 4in; margin-top: 12pt; text-transform: uppercase; }
-.dialogue { margin-left: 1in; width: 3.5in; }
-
-        /* 6. SCREENPLAY ELEMENTS */
+        /* SCREENPLAY ELEMENTS */
         .line { min-height: 1.2em; outline: none; position: relative; margin: 0; width: 100%; }
-        .scene-heading { text-transform: uppercase; font-weight: bold; margin-top: 24pt; border-top: 1px solid transparent; }
+        .scene-heading { text-transform: uppercase; font-weight: bold; margin-top: 24pt; }
         .action { margin-top: 12pt; }
         .character { margin-left: 2in; width: 4in; margin-top: 12pt; text-transform: uppercase; }
         .parenthetical { margin-left: 1.5in; width: 2.5in; }
         .dialogue { margin-left: 1in; width: 3.5in; margin-bottom: 0; }
         .transition { text-transform: uppercase; margin-left: 4.5in; margin-top: 12pt; }
 
-        /* 7. UI COMPONENTS */
+        /* UI COMPONENTS */
         .nav-item { padding: 8px; font-size: 0.8rem; cursor: pointer; border-bottom: 1px solid #2d3436; text-transform: uppercase; border-radius: 4px; }
         .nav-item:hover { color: white; background: #2d3436; }
         .story-box { background: rgba(255,255,255,0.05); min-height: 400px; font-size: 0.85rem; border: 1px dashed #444; padding: 15px; border-radius: 8px; outline: none; color: #ddd; }
@@ -114,7 +91,7 @@
         @media print {
             #left-sidebar, #right-sidebar, #auth-overlay, #legend-overlay { display: none !important; }
             #main-editor { padding: 0; background: white; }
-            #script-container { box-shadow: none; border: none; width: 100%; background-image: none !important; }
+            .paper-page { box-shadow: none; border: none; margin: 0; page-break-after: always; }
         }
     </style>
 </head>
@@ -142,7 +119,7 @@
         <h6 class="mb-3 text-muted">SCENES</h6>
         <div id="scene-list" class="flex-grow-1 overflow-auto mb-3"></div>
         <div class="small mb-3">
-            Pages: <span id="stat-pages">1</span><br>
+            Pages: <span id="stat-pages">0</span><br>
             Words: <span id="stat-words">0</span>
         </div>
         <div class="d-grid gap-2">
@@ -155,11 +132,7 @@
         </div>
     </div>
 
-    <div id="main-editor">
-        <div id="script-container" contenteditable="true" spellcheck="true">
-            <div class="line scene-heading" data-type="scene-heading">&#8203;</div>
-        </div>
-    </div>
+    <div id="main-editor"></div>
 
     <div id="right-sidebar">
         <div class="btn-group mb-3 w-100">
@@ -190,7 +163,7 @@
         const provider = new GoogleAuthProvider();
         let currentUser = null;
 
-        const container = document.getElementById('script-container');
+        const editor = document.getElementById('main-editor');
         const beatsBox = document.getElementById('beat-container');
         const charsBox = document.getElementById('char-container');
         const elements = ["scene-heading", "action", "character", "parenthetical", "dialogue", "transition"];
@@ -208,12 +181,23 @@
             }
         });
 
+        function createNewPage() {
+            const page = document.createElement('div');
+            page.className = 'paper-page';
+            page.contentEditable = true;
+            page.innerHTML = '<div class="line action" data-type="action">&#8203;</div>';
+            editor.appendChild(page);
+            return page;
+        }
+
         document.addEventListener('keydown', (e) => {
             if (e.ctrlKey && (e.key === '/' || e.code === 'Slash')) { e.preventDefault(); toggleLegend(); return; }
             if (e.ctrlKey && e.key === '\\') { e.preventDefault(); toggleFocusMode(); return; }
             
-            if (!container.contains(document.activeElement)) return;
             const sel = window.getSelection();
+            const currentPage = sel.anchorNode?.parentElement?.closest('.paper-page');
+            if (!currentPage) return;
+
             const line = sel.anchorNode?.nodeType === 3 ? sel.anchorNode.parentElement.closest('.line') : sel.anchorNode.closest('.line');
             
             if (e.key === 'Tab') {
@@ -237,6 +221,19 @@
             if (e.key === 'Enter') {
                 e.preventDefault();
                 if (!line) return;
+
+                // PAGE BREAK LOGIC: 960px is approx bottom limit for content inside 1in margins
+                if (currentPage.scrollHeight > 960) {
+                    const nextP = createNewPage();
+                    const firstLine = nextP.querySelector('.line');
+                    const range = document.createRange();
+                    range.setStart(firstLine.firstChild, 0);
+                    range.collapse(true);
+                    sel.removeAllRanges(); sel.addRange(range);
+                    updateStats();
+                    return;
+                }
+
                 const type = line.dataset.type;
                 const nextType = { "character": "dialogue", "scene-heading": "action", "dialogue": "action", "parenthetical": "dialogue" }[type] || "action";
                 const newLine = document.createElement('div');
@@ -253,18 +250,16 @@
             }
         });
 
-        [container, beatsBox, charsBox].forEach(box => {
-            box.addEventListener('input', () => {
-                if (box === container) autoCapitalize();
-                updateStats();
-                saveToCloud();
-            });
+        editor.addEventListener('input', (e) => {
+            if (e.target.classList.contains('line')) autoCapitalize(e.target);
+            updateStats();
+            saveToCloud();
         });
 
         async function saveToCloud() {
             if (currentUser) {
                 await setDoc(doc(db, "scripts", currentUser.uid), {
-                    content: container.innerHTML,
+                    content: editor.innerHTML,
                     beats: beatsBox.innerHTML,
                     chars: charsBox.innerHTML
                 }, { merge: true });
@@ -275,13 +270,13 @@
             onSnapshot(doc(db, "scripts", uid), (snap) => {
                 if (snap.exists()) {
                     const data = snap.data();
-                    if (document.activeElement !== container) {
-                        container.innerHTML = data.content || '<div class="line scene-heading" data-type="scene-heading">&#8203;</div>';
+                    if (document.activeElement.closest('#main-editor') === null) {
+                        editor.innerHTML = data.content || '<div class="paper-page" contenteditable="true"><div class="line scene-heading" data-type="scene-heading">&#8203;</div></div>';
                         updateNavigator();
                         updateStats();
                     }
-                    if (document.activeElement !== beatsBox) beatsBox.innerHTML = data.beats || "<b>BEAT SHEET:</b>";
-                    if (document.activeElement !== charsBox) charsBox.innerHTML = data.chars || "<b>CHARACTERS:</b>";
+                    if (document.activeElement !== beatsBox) beatsBox.innerHTML = data.beats || "<b>BEATS:</b>";
+                    if (document.activeElement !== charsBox) charsBox.innerHTML = data.chars || "<b>CHARS:</b>";
                 }
             });
         }
@@ -290,10 +285,8 @@
             const leg = document.getElementById('legend-overlay');
             leg.style.display = (leg.style.display === 'none' || leg.style.display === '') ? 'flex' : 'none';
         };
-
         window.toggleDarkMode = () => document.body.classList.toggle('dark-mode');
         window.toggleFocusMode = () => document.body.classList.toggle('focus-mode');
-
         window.switchTab = (tab) => {
             document.getElementById('tab-beats').style.display = tab === 'beats' ? 'block' : 'none';
             document.getElementById('tab-chars').style.display = tab === 'chars' ? 'block' : 'none';
@@ -301,10 +294,9 @@
             document.getElementById('btn-chars').className = tab === 'chars' ? 'btn btn-sm btn-info' : 'btn btn-sm btn-outline-info';
         };
 
-        function autoCapitalize() {
-            const sel = window.getSelection();
-            const line = sel.anchorNode?.nodeType === 3 ? sel.anchorNode.parentElement.closest('.line') : sel.anchorNode.closest('.line');
+        function autoCapitalize(line) {
             if (line && (line.dataset.type === 'character' || line.dataset.type === 'scene-heading')) {
+                const sel = window.getSelection();
                 const pos = sel.anchorOffset;
                 line.innerText = line.innerText.toUpperCase();
                 const range = document.createRange();
@@ -319,7 +311,7 @@
         function updateNavigator() {
             const list = document.getElementById('scene-list');
             list.innerHTML = "";
-            container.querySelectorAll('.scene-heading').forEach((s) => {
+            editor.querySelectorAll('.scene-heading').forEach((s) => {
                 const item = document.createElement('div');
                 item.className = 'nav-item mb-1';
                 item.innerText = s.innerText.trim() || "NEW SCENE";
@@ -329,22 +321,22 @@
         }
 
         function updateStats() {
-            const words = container.innerText.trim().split(/\s+/).length;
-            const pages = Math.max(1, Math.ceil(container.scrollHeight / 1056)); 
+            const pages = document.querySelectorAll('.paper-page').length;
+            const words = editor.innerText.trim().split(/\s+/).length;
             document.getElementById('stat-pages').innerText = pages;
             document.getElementById('stat-words').innerText = words;
         }
 
         window.exportToPDF = () => {
-            const opt = { margin: [1, 1, 1, 1.5], filename: 'script.pdf', jsPDF: { unit: 'in', format: 'letter' } };
-            html2pdf().set(opt).from(container).save();
+            const opt = { margin: 0, filename: 'script.pdf', jsPDF: { unit: 'in', format: 'letter' } };
+            html2pdf().set(opt).from(editor).save();
         };
 
         window.saveVersion = async () => {
             const name = prompt("Name this snapshot:");
             if (!name) return;
             await addDoc(collection(db, "scripts", currentUser.uid, "snapshots"), {
-                name, content: container.innerHTML, timestamp: new Date()
+                name, content: editor.innerHTML, timestamp: new Date()
             });
             alert("Snapshot saved!");
         };
