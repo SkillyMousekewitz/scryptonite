@@ -19,53 +19,58 @@
 
         body { 
             margin: 0; display: flex; flex-direction: row; height: 100vh; width: 100vw;
-            background: #f4f7f6; overflow: hidden; 
+            background: var(--desk-color); overflow: hidden; 
         }
 
         /* SIDEBARS */
         #left-sidebar, #right-sidebar { 
             background: var(--bg-sidebar); color: #b2bec3; 
-            display: flex; flex-direction: column; padding: 20px; z-index: 100; 
-            flex-shrink: 0;
+            display: flex; flex-direction: column; padding: 20px; z-index: 100; flex-shrink: 0;
         }
         #left-sidebar { width: var(--sidebar-width); border-right: 1px solid #2d3436; }
         #right-sidebar { width: var(--right-width); border-left: 1px solid #2d3436; }
 
-        /* THE DESK (SCROLLABLE AREA) */
+        /* THE DESK & PAPER */
         #main-editor { 
             flex-grow: 1; overflow-y: auto; background: var(--desk-color); 
             padding: 40px 0; display: flex; flex-direction: column; align-items: center;
         }
 
-        /* INDIVIDUAL PAPER SHEET */
-        .paper-page { 
-            width: 8.5in; height: 11in; min-height: 11in;
-            background: white; margin-bottom: 30px; 
+        /* HYBRID PAPER ENGINE: One continuous sheet with visual breaks */
+        #script-container { 
+            width: 8.5in; 
+            min-height: 11in; 
+            height: auto !important;
+            background-color: white; 
+            /* This draws a light grey line every 11 inches */
+            background-image: linear-gradient(to bottom, transparent 10.99in, #e0e0e0 11in);
+            background-size: 100% 11in;
             padding: 1in 1in 1in 1.5in; 
-            box-shadow: 0 0 20px rgba(0,0,0,0.5); 
+            box-shadow: 0 0 30px rgba(0,0,0,0.5); 
             font-family: 'Courier Prime', Courier, monospace; 
             font-size: 12pt; line-height: 1.2; outline: none; color: #000;
-            box-sizing: border-box; flex-shrink: 0; overflow: hidden;
+            margin-bottom: 500px; box-sizing: border-box;
         }
 
         /* ELEMENTS */
-        .line { min-height: 1.2em; outline: none; margin: 0; width: 100%; word-wrap: break-word; }
+        .line { min-height: 1.2em; outline: none; margin: 0; width: 100%; }
         .scene-heading { text-transform: uppercase; font-weight: bold; margin-top: 24pt; }
         .action { margin-top: 12pt; }
         .character { margin-left: 2in; width: 4in; margin-top: 12pt; text-transform: uppercase; }
+        .parenthetical { margin-left: 1.5in; width: 2.5in; }
         .dialogue { margin-left: 1in; width: 3.5in; }
 
-        /* UI */
+        /* UI COMPONENTS */
         #auth-overlay, #legend-overlay { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; }
         #auth-overlay { background: #f4f7f6; }
         #legend-overlay { background: rgba(0,0,0,0.85); display: none; }
-        .story-box { background: rgba(255,255,255,0.05); min-height: 400px; padding: 15px; border-radius: 8px; color: #ddd; outline: none; border: 1px dashed #444; }
+        .story-box { background: rgba(255,255,255,0.05); min-height: 400px; padding: 15px; color: #ddd; outline: none; border: 1px dashed #444; }
         kbd { background-color: #333; color: var(--accent); padding: 2px 4px; border-radius: 3px; }
 
         @media print {
             #left-sidebar, #right-sidebar, #auth-overlay { display: none !important; }
             #main-editor { padding: 0; background: white; }
-            .paper-page { box-shadow: none; margin: 0; page-break-after: always; }
+            #script-container { box-shadow: none; background-image: none !important; }
         }
     </style>
 </head>
@@ -85,12 +90,15 @@
         <div class="d-grid gap-2">
             <button class="btn btn-outline-info btn-sm" onclick="toggleLegend()">Help</button>
             <button class="btn btn-success btn-sm" onclick="exportToPDF()">Export PDF</button>
-            <button class="btn btn-link btn-sm text-danger" onclick="signOutUser()">Sign Out</button>
+            <button class="btn btn-link btn-sm text-danger mt-3" onclick="signOutUser()">Sign Out</button>
         </div>
     </div>
 
     <div id="main-editor">
+        <div id="script-container" contenteditable="true" spellcheck="true">
+            <div class="line scene-heading" data-type="scene-heading">&#8203;</div>
         </div>
+    </div>
 
     <div id="right-sidebar">
         <div class="btn-group mb-3 w-100">
@@ -121,7 +129,7 @@
         const provider = new GoogleAuthProvider();
         let currentUser = null;
 
-        const editor = document.getElementById('main-editor');
+        const container = document.getElementById('script-container');
         const elements = ["scene-heading", "action", "character", "parenthetical", "dialogue", "transition"];
 
         onAuthStateChanged(auth, (user) => {
@@ -137,30 +145,9 @@
         document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
         window.signOutUser = () => signOut(auth);
 
-        function createNewPage() {
-            const page = document.createElement('div');
-            page.className = 'paper-page';
-            page.contentEditable = true;
-            page.innerHTML = '<div class="line action" data-type="action">&#8203;</div>';
-            editor.appendChild(page);
-            return page;
-        }
-
-        function checkOverflow(page) {
-            const PAGE_LIMIT = 960; 
-            if (page.scrollHeight > PAGE_LIMIT) {
-                let nextP = page.nextElementSibling;
-                if (!nextP) nextP = createNewPage();
-                nextP.prepend(page.lastElementChild);
-                return true;
-            }
-            return false;
-        }
-
         document.addEventListener('keydown', (e) => {
+            if (!container.contains(document.activeElement)) return;
             const sel = window.getSelection();
-            const currentPage = sel.anchorNode?.parentElement?.closest('.paper-page');
-            if (!currentPage) return;
             const line = sel.anchorNode?.nodeType === 3 ? sel.anchorNode.parentElement.closest('.line') : sel.anchorNode.closest('.line');
 
             if (e.key === 'Tab') {
@@ -168,6 +155,7 @@
                 let idx = (elements.indexOf(line.dataset.type) + (e.shiftKey ? -1 : 1) + elements.length) % elements.length;
                 line.className = `line ${elements[idx]}`;
                 line.dataset.type = elements[idx];
+                updateNavigator();
             }
 
             if (e.key === 'Enter') {
@@ -178,19 +166,15 @@
                 newLine.dataset.type = nextType;
                 newLine.innerHTML = "&#8203;";
                 line.after(newLine);
-                
                 const range = document.createRange();
                 range.setStart(newLine.firstChild, 0);
                 range.collapse(true);
                 sel.removeAllRanges(); sel.addRange(range);
-                checkOverflow(currentPage);
                 updateStats();
             }
         });
 
-        editor.addEventListener('input', (e) => {
-            const page = window.getSelection().anchorNode?.parentElement?.closest('.paper-page');
-            if (page) checkOverflow(page);
+        container.addEventListener('input', () => {
             updateStats();
             saveToCloud();
         });
@@ -198,7 +182,7 @@
         async function saveToCloud() {
             if (currentUser) {
                 await setDoc(doc(db, "scripts", currentUser.uid), {
-                    content: editor.innerHTML,
+                    content: container.innerHTML,
                     beats: document.getElementById('beat-container').innerHTML,
                     chars: document.getElementById('char-container').innerHTML
                 }, { merge: true });
@@ -207,19 +191,31 @@
 
         function startSync(uid) {
             onSnapshot(doc(db, "scripts", uid), (snap) => {
-                if (snap.exists() && document.activeElement.closest('.paper-page') === null) {
+                if (snap.exists() && document.activeElement !== container) {
                     const data = snap.data();
-                    editor.innerHTML = data.content || '';
+                    container.innerHTML = data.content || '<div class="line scene-heading" data-type="scene-heading">&#8203;</div>';
+                    updateStats();
+                    updateNavigator();
                 }
-                // FORCED INITIALIZER: If editor is still empty after sync, build page 1
-                if (editor.children.length === 0) createNewPage();
-                updateStats();
             });
         }
 
         function updateStats() {
-            document.getElementById('stat-pages').innerText = document.querySelectorAll('.paper-page').length;
-            document.getElementById('stat-words').innerText = editor.innerText.trim().split(/\s+/).length;
+            // 1056px is roughly 11 inches at standard DPI
+            document.getElementById('stat-pages').innerText = Math.max(1, Math.ceil(container.scrollHeight / 1056));
+            document.getElementById('stat-words').innerText = container.innerText.trim().split(/\s+/).length;
+        }
+
+        function updateNavigator() {
+            const list = document.getElementById('scene-list');
+            list.innerHTML = "";
+            container.querySelectorAll('.scene-heading').forEach(s => {
+                const item = document.createElement('div');
+                item.className = 'nav-item mb-1';
+                item.innerText = s.innerText.trim() || "NEW SCENE";
+                item.onclick = () => s.scrollIntoView({ behavior: 'smooth' });
+                list.appendChild(item);
+            });
         }
 
         window.toggleLegend = () => {
@@ -227,7 +223,10 @@
             leg.style.display = leg.style.display === 'flex' ? 'none' : 'flex';
         };
 
-        window.exportToPDF = () => { html2pdf().from(editor).save('script.pdf'); };
+        window.exportToPDF = () => {
+            const opt = { margin: [1, 1, 1, 1.5], filename: 'script.pdf', jsPDF: { unit: 'in', format: 'letter' } };
+            html2pdf().set(opt).from(container).save();
+        };
 
         window.switchTab = (tab) => {
             document.getElementById('tab-beats').style.display = tab === 'beats' ? 'block' : 'none';
