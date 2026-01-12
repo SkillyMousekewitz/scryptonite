@@ -168,7 +168,7 @@
             }
         });
 
-        // --- KEYBOARD ENGINE WITH CURSOR ANCHOR ---
+        // --- KEYBOARD ENGINE ---
         document.addEventListener('keydown', (e) => {
             if (e.ctrlKey && (e.key === '/' || e.code === 'Slash')) { e.preventDefault(); toggleLegend(); return; }
             if (e.ctrlKey && e.key === '\\') { e.preventDefault(); toggleFocusMode(); return; }
@@ -181,25 +181,18 @@
             if (e.key === 'Tab') {
                 e.preventDefault();
                 if (!line) return;
-                
-                // SAVE CURSOR POSITION
                 const offset = sel.anchorOffset;
-
-                // CHANGE LINE TYPE
                 let idx = elements.indexOf(line.dataset.type);
                 idx = e.shiftKey ? (idx - 1 + elements.length) % elements.length : (idx + 1) % elements.length;
                 line.className = `line ${elements[idx]}`;
                 line.dataset.type = elements[idx];
                 
-                // RESTORE CURSOR (The Anchor)
+                // Restore Cursor
                 const range = document.createRange();
-                const targetNode = line.firstChild || line;
-                const finalOffset = Math.min(offset, targetNode.length || 0);
-                range.setStart(targetNode, finalOffset);
+                const node = line.firstChild || line;
+                range.setStart(node, Math.min(offset, node.length || 0));
                 range.collapse(true);
-                sel.removeAllRanges();
-                sel.addRange(range);
-                
+                sel.removeAllRanges(); sel.addRange(range);
                 updateNavigator();
                 return;
             }
@@ -209,15 +202,21 @@
                 if (!line) return;
                 const type = line.dataset.type;
                 const nextType = { "character": "dialogue", "scene-heading": "action", "dialogue": "action", "parenthetical": "dialogue" }[type] || "action";
+                
                 const newLine = document.createElement('div');
                 newLine.className = `line ${nextType}`;
                 newLine.dataset.type = nextType;
-                newLine.innerHTML = "<br>"; 
+                newLine.innerHTML = "&#8203;"; // Zero-width space to give the cursor a place to land
                 line.after(newLine);
+
+                // Force Cursor into New Line
                 const range = document.createRange();
-                range.setStart(newLine, 0);
+                range.setStart(newLine.firstChild, 0);
                 range.collapse(true);
-                sel.removeAllRanges(); sel.addRange(range);
+                sel.removeAllRanges();
+                sel.addRange(range);
+                newLine.focus();
+                return;
             }
 
             if (e.ctrlKey && e.shiftKey && e.key === 'N') {
