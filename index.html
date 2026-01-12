@@ -9,157 +9,101 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
-/* 1. CORE THEME & VARIABLES */
-:root {
-    --sidebar-width: 260px;
-    --right-width: 300px;
-    --bg-main: #f4f7f6;
-    --bg-sidebar: #1a1c1e;
-    --bg-editor: #ffffff;
-    --text-main: #2d3436;
-    --text-sidebar: #b2bec3;
-    --accent: #00cec9;
-    --desk-color: #2d3436; /* The color of the "desk" behind the paper */
-}
+        /* 1. CORE THEME & VARIABLES */
+        :root {
+            --sidebar-width: 260px;
+            --right-width: 300px;
+            --bg-main: #f4f7f6;
+            --bg-sidebar: #1a1c1e;
+            --text-sidebar: #b2bec3;
+            --accent: #00cec9;
+            --desk-color: #2d3436; 
+        }
 
-body.dark-mode {
-    --bg-main: #0f1111;
-    --bg-sidebar: #000000;
-    --bg-editor: #ffffff; 
-    --text-main: #dfe6e9;
-    --text-sidebar: #636e72;
-    --desk-color: #1a1c1e;
-}
+        body.dark-mode {
+            --bg-main: #0f1111;
+            --bg-sidebar: #000000;
+            --text-sidebar: #636e72;
+            --desk-color: #1a1c1e;
+        }
 
-/* 2. LAYOUT ENGINE */
-body { 
-    margin: 0; 
-    display: flex; 
-    flex-direction: row; 
-    height: 100vh; 
-    background: var(--bg-main); 
-    color: var(--text-main); 
-    transition: 0.3s; 
-    overflow: hidden; 
-}
+        /* 2. LAYOUT ENGINE - CRITICAL FIX FOR SIDEBARS */
+        body { 
+            margin: 0; 
+            display: flex; 
+            flex-direction: row; 
+            height: 100vh; 
+            width: 100vw;
+            background: var(--bg-main); 
+            transition: 0.3s; 
+            overflow: hidden; 
+        }
 
-/* 3. OVERLAYS (AUTH & HELP) */
-#auth-overlay, #legend-overlay { 
-    position: fixed; 
-    inset: 0; 
-    z-index: 9999; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-}
+        /* 3. OVERLAYS */
+        #auth-overlay, #legend-overlay { 
+            position: fixed; inset: 0; z-index: 9999; 
+            display: flex; align-items: center; justify-content: center; 
+        }
+        #auth-overlay { background: var(--bg-main); }
+        #legend-overlay { background: rgba(0,0,0,0.85); z-index: 10001; display: none; cursor: pointer; }
 
-#auth-overlay { background: var(--bg-main); }
+        /* 4. SIDEBARS */
+        #left-sidebar, #right-sidebar { 
+            background: var(--bg-sidebar); 
+            color: var(--text-sidebar); 
+            display: flex; flex-direction: column; 
+            padding: 20px; z-index: 100; transition: 0.3s ease; flex-shrink: 0;
+        }
+        #left-sidebar { width: var(--sidebar-width); border-right: 1px solid #2d3436; }
+        #right-sidebar { width: var(--right-width); border-left: 1px solid #2d3436; }
 
-#legend-overlay { 
-    background: rgba(0,0,0,0.85); 
-    z-index: 10001; 
-    cursor: pointer; 
-    display: none; 
-}
+        body.focus-mode #left-sidebar { margin-left: calc(var(--sidebar-width) * -1); }
+        body.focus-mode #right-sidebar { margin-right: calc(var(--right-width) * -1); }
 
-/* 4. SIDEBARS */
-#left-sidebar, #right-sidebar { 
-    background: var(--bg-sidebar); 
-    color: var(--text-sidebar); 
-    display: flex; 
-    flex-direction: column; 
-    padding: 20px; 
-    z-index: 100; 
-    transition: 0.3s ease; 
-    flex-shrink: 0;
-}
-#left-sidebar { width: var(--sidebar-width); border-right: 1px solid #2d3436; }
-#right-sidebar { width: var(--right-width); border-left: 1px solid #2d3436; }
+        /* 5. THE PAPER ENGINE */
+        #main-editor { 
+            flex-grow: 1; overflow-y: auto; overflow-x: hidden;
+            background: var(--desk-color);
+            padding: 40px 0; 
+            display: flex; flex-direction: column; align-items: center;
+        }
 
-body.focus-mode #left-sidebar { margin-left: calc(var(--sidebar-width) * -1); }
-body.focus-mode #right-sidebar { margin-right: calc(var(--right-width) * -1); }
+        #script-container { 
+            width: 8.5in; 
+            min-height: 11in; 
+            height: auto !important; 
+            background-color: white; 
+            /* Creates the Stacked Sheet Gap effect */
+            background-image: linear-gradient(to bottom, #ffffff 10.7in, var(--desk-color) 10.7in, var(--desk-color) 11in);
+            background-size: 100% 11in;
+            background-repeat: repeat-y;
+            padding: 1in 1in 1in 1.5in; 
+            box-shadow: 0 0 30px rgba(0,0,0,0.5); 
+            font-family: 'Courier Prime', Courier, monospace; 
+            font-size: 12pt; line-height: 1.2; outline: none; color: #000;
+            margin-bottom: 400px; box-sizing: border-box;
+        }
 
-/* 5. THE PAPER ENGINE (FIXED MARGINS) */
-#main-editor { 
-    flex-grow: 1; 
-    flex-shrink: 1; 
-    min-width: 0; 
-    overflow-y: auto; 
-    background: var(--desk-color); /* Shows through the page gaps */
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 40px 0; 
-}
+        /* 6. SCREENPLAY ELEMENTS */
+        .line { min-height: 1.2em; outline: none; position: relative; margin: 0; width: 100%; }
+        .scene-heading { text-transform: uppercase; font-weight: bold; margin-top: 24pt; border-top: 1px solid transparent; }
+        .action { margin-top: 12pt; }
+        .character { margin-left: 2in; width: 4in; margin-top: 12pt; text-transform: uppercase; }
+        .parenthetical { margin-left: 1.5in; width: 2.5in; }
+        .dialogue { margin-left: 1in; width: 3.5in; margin-bottom: 0; }
+        .transition { text-transform: uppercase; margin-left: 4.5in; margin-top: 12pt; }
 
-#script-container { 
-    width: 8.5in; 
-    min-height: 11in; 
-    height: auto !important; 
-    display: block;
-    background-color: white; 
-    /* Draws 10.5in of white paper, then 0.5in of empty desk space */
-    background-image: linear-gradient(to bottom, #ffffff 10.5in, var(--desk-color) 10.5in, var(--desk-color) 11in);
-    background-size: 100% 11in;
-    background-repeat: repeat-y;
-    
-    /* Internal Page Margins */
-    padding: 1in 1in 1in 1.5in; 
-    
-    box-shadow: 0 0 40px rgba(0,0,0,0.3); 
-    font-family: 'Courier Prime', Courier, monospace; 
-    font-size: 12pt; 
-    line-height: 1.2; 
-    outline: none;
-    color: #000;
-    margin-bottom: 400px;
-    box-sizing: border-box;
-}
+        /* 7. UI COMPONENTS */
+        .nav-item { padding: 8px; font-size: 0.8rem; cursor: pointer; border-bottom: 1px solid #2d3436; text-transform: uppercase; border-radius: 4px; }
+        .nav-item:hover { color: white; background: #2d3436; }
+        .story-box { background: rgba(255,255,255,0.05); min-height: 400px; font-size: 0.85rem; border: 1px dashed #444; padding: 15px; border-radius: 8px; outline: none; color: #ddd; }
+        kbd { background-color: #333; border-radius: 3px; color: #00cec9; padding: 2px 4px; font-size: 0.85em; font-weight: 700; border: 1px solid #555; }
 
-/* 6. SCREENPLAY ELEMENTS */
-.line { min-height: 1.2em; outline: none; position: relative; margin: 0; width: 100%; }
-.scene-heading { text-transform: uppercase; font-weight: bold; margin-top: 24pt; border-top: 1px solid transparent; }
-.action { margin-top: 12pt; }
-.character { margin-left: 2in; width: 4in; margin-top: 12pt; text-transform: uppercase; }
-.parenthetical { margin-left: 1.5in; width: 2.5in; }
-.dialogue { margin-left: 1in; width: 3.5in; margin-bottom: 0; }
-.transition { text-transform: uppercase; margin-left: 4.5in; margin-top: 12pt; }
-
-.script-note { 
-    background: rgba(253, 250, 114, 0.4); 
-    color: #000; padding: 10px; margin: 10px 0; 
-    border-left: 4px solid #f1c40f; 
-    font-family: sans-serif; font-size: 0.85rem; font-style: italic; 
-}
-
-/* 7. UI COMPONENTS */
-.story-box { 
-    background: rgba(255,255,255,0.05); 
-    min-height: 400px; 
-    font-size: 0.85rem; 
-    border: 1px dashed #444; 
-    padding: 15px; 
-    border-radius: 8px; 
-    outline: none; 
-    color: #ddd; 
-}
-
-.nav-item { 
-    padding: 8px; font-size: 0.8rem; cursor: pointer; 
-    border-bottom: 1px solid #2d3436; text-transform: uppercase; border-radius: 4px; 
-}
-.nav-item:hover { color: white; background: #2d3436; }
-
-kbd { 
-    background-color: #333; border-radius: 3px; color: #00cec9; 
-    padding: 2px 4px; font-size: 0.85em; font-weight: 700; border: 1px solid #555; 
-}
-
-@media print {
-    #left-sidebar, #right-sidebar, .script-note, #auth-overlay, #legend-overlay { display: none !important; }
-    #main-editor { padding: 0; background: white; }
-    #script-container { box-shadow: none; border: none; width: 100%; background-image: none !important; }
-}
+        @media print {
+            #left-sidebar, #right-sidebar, #auth-overlay, #legend-overlay { display: none !important; }
+            #main-editor { padding: 0; background: white; }
+            #script-container { box-shadow: none; border: none; width: 100%; background-image: none !important; }
+        }
     </style>
 </head>
 <body>
@@ -171,21 +115,14 @@ kbd {
         </div>
     </div>
 
-    <div id="legend-overlay" style="display:none;" onclick="toggleLegend()">
+    <div id="legend-overlay" onclick="toggleLegend()">
         <div class="card bg-dark text-white p-4 border-secondary shadow-lg" style="width: 450px;" onclick="event.stopPropagation()">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="mb-0 text-info">COMMANDS</h5>
-                <button class="btn-close btn-close-white" onclick="toggleLegend()"></button>
-            </div>
-            <table class="table table-dark table-hover mb-0" style="font-size: 0.9rem;">
-                <tbody>
-                    <tr><td><kbd>Tab</kbd></td><td>Cycle Elements</td></tr>
-                    <tr><td><kbd>Enter</kbd></td><td>Smart Next Line</td></tr>
-                    <tr><td><kbd>Ctrl + \</kbd></td><td>Focus Mode (Hide UI)</td></tr>
-                    <tr><td><kbd>Ctrl + /</kbd></td><td>Show Help</td></tr>
-                    <tr><td><kbd>Ctrl + Shift + N</kbd></td><td>Add Script Note</td></tr>
-                </tbody>
-            </table>
+            <h5 class="text-info">COMMANDS</h5>
+            <hr>
+            <p><kbd>Tab</kbd> Cycle Elements</p>
+            <p><kbd>Enter</kbd> Smart Next Line</p>
+            <p><kbd>Ctrl + \</kbd> Focus Mode</p>
+            <p><kbd>Ctrl + /</kbd> Show Help</p>
         </div>
     </div>
 
@@ -194,8 +131,7 @@ kbd {
         <div id="scene-list" class="flex-grow-1 overflow-auto mb-3"></div>
         <div class="small mb-3">
             Pages: <span id="stat-pages">1</span><br>
-            Words: <span id="stat-words">0</span><br>
-            Runtime: <span id="stat-time">0m 0s</span>
+            Words: <span id="stat-words">0</span>
         </div>
         <div class="d-grid gap-2">
             <button class="btn btn-outline-secondary btn-sm" onclick="toggleDarkMode()">Theme</button>
@@ -218,194 +154,188 @@ kbd {
             <button id="btn-beats" class="btn btn-sm btn-info" onclick="switchTab('beats')">BEATS</button>
             <button id="btn-chars" class="btn btn-sm btn-outline-info" onclick="switchTab('chars')">CHARS</button>
         </div>
-        <div id="tab-beats"><div id="beat-container" contenteditable="true" class="story-box"><b>STORY BEATS:</b><br>• </div></div>
+        <div id="tab-beats"><div id="beat-container" contenteditable="true" class="story-box"><b>BEAT SHEET:</b><br>• </div></div>
         <div id="tab-chars" style="display:none;"><div id="char-container" contenteditable="true" class="story-box"><b>CHARACTERS:</b><br>• </div></div>
     </div>
 
     <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-import { getFirestore, doc, setDoc, onSnapshot, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 
-const firebaseConfig = {
-    apiKey: "AIzaSyCMJ8mkBdyhLDbC6RmaVK9zWl-XSms6RoA",
-    authDomain: "scryptonite-6a340.firebaseapp.com",
-    projectId: "scryptonite-6a340",
-    storageBucket: "scryptonite-6a340.firebasestorage.app",
-    messagingSenderId: "875468928578",
-    appId: "1:875468928578:web:524ae574d4c84593a49fdb",
-};
+        const firebaseConfig = {
+            apiKey: "AIzaSyCMJ8mkBdyhLDbC6RmaVK9zWl-XSms6RoA",
+            authDomain: "scryptonite-6a340.firebaseapp.com",
+            projectId: "scryptonite-6a340",
+            storageBucket: "scryptonite-6a340.firebasestorage.app",
+            messagingSenderId: "875468928578",
+            appId: "1:875468928578:web:524ae574d4c84593a49fdb",
+        };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
-let currentUser = null;
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+        let currentUser = null;
 
-const container = document.getElementById('script-container');
-const beatsBox = document.getElementById('beat-container');
-const charsBox = document.getElementById('char-container');
-const elements = ["scene-heading", "action", "character", "parenthetical", "dialogue", "transition"];
+        const container = document.getElementById('script-container');
+        const beatsBox = document.getElementById('beat-container');
+        const charsBox = document.getElementById('char-container');
+        const elements = ["scene-heading", "action", "character", "parenthetical", "dialogue", "transition"];
 
-// --- AUTH ---
-document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
-window.signOutUser = () => signOut(auth);
+        document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
+        window.signOutUser = () => signOut(auth);
 
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        currentUser = user;
-        document.getElementById('auth-overlay').style.display = 'none';
-        startSync(user.uid);
-    } else {
-        document.getElementById('auth-overlay').style.display = 'flex';
-    }
-});
-
-// --- EDITOR LOGIC ---
-document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey && (e.key === '/' || e.code === 'Slash')) { e.preventDefault(); toggleLegend(); return; }
-    if (e.ctrlKey && e.key === '\\') { e.preventDefault(); toggleFocusMode(); return; }
-    
-    if (!container.contains(document.activeElement)) return;
-    const sel = window.getSelection();
-    const line = sel.anchorNode?.nodeType === 3 ? sel.anchorNode.parentElement.closest('.line') : sel.anchorNode.closest('.line');
-    
-    if (e.key === 'Tab') {
-        e.preventDefault();
-        if (!line) return;
-        const offset = sel.anchorOffset;
-        if (!line.innerText.trim()) line.innerHTML = "&#8203;"; 
-        let idx = elements.indexOf(line.dataset.type);
-        idx = e.shiftKey ? (idx - 1 + elements.length) % elements.length : (idx + 1) % elements.length;
-        line.className = `line ${elements[idx]}`;
-        line.dataset.type = elements[idx];
-        const range = document.createRange();
-        const node = line.firstChild || line;
-        range.setStart(node, Math.min(offset, node.length || 0));
-        range.collapse(true);
-        sel.removeAllRanges(); sel.addRange(range);
-        updateNavigator();
-        return;
-    }
-
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        if (!line) return;
-        const type = line.dataset.type;
-        const nextType = { "character": "dialogue", "scene-heading": "action", "dialogue": "action", "parenthetical": "dialogue" }[type] || "action";
-        const newLine = document.createElement('div');
-        newLine.className = `line ${nextType}`;
-        newLine.dataset.type = nextType;
-        newLine.innerHTML = "&#8203;"; 
-        line.after(newLine);
-        const range = document.createRange();
-        range.setStart(newLine.firstChild, 0);
-        range.collapse(true);
-        sel.removeAllRanges();
-        sel.addRange(range);
-        updateStats();
-        return;
-    }
-});
-
-[container, beatsBox, charsBox].forEach(box => {
-    box.addEventListener('input', () => {
-        if (box === container) autoCapitalize();
-        updateStats();
-        saveToCloud();
-    });
-});
-
-async function saveToCloud() {
-    if (currentUser) {
-        await setDoc(doc(db, "scripts", currentUser.uid), {
-            content: container.innerHTML,
-            beats: beatsBox.innerHTML,
-            chars: charsBox.innerHTML
-        }, { merge: true });
-    }
-}
-
-function startSync(uid) {
-    onSnapshot(doc(db, "scripts", uid), (snap) => {
-        if (snap.exists()) {
-            const data = snap.data();
-            if (document.activeElement !== container) {
-                container.innerHTML = data.content || "";
-                updateNavigator();
-                updateStats();
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('auth-overlay').style.display = 'none';
+                startSync(user.uid);
+            } else {
+                document.getElementById('auth-overlay').style.display = 'flex';
             }
-            if (document.activeElement !== beatsBox) beatsBox.innerHTML = data.beats || "<b>BEAT SHEET:</b>";
-            if (document.activeElement !== charsBox) charsBox.innerHTML = data.chars || "<b>CHARACTERS:</b>";
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && (e.key === '/' || e.code === 'Slash')) { e.preventDefault(); toggleLegend(); return; }
+            if (e.ctrlKey && e.key === '\\') { e.preventDefault(); toggleFocusMode(); return; }
+            
+            if (!container.contains(document.activeElement)) return;
+            const sel = window.getSelection();
+            const line = sel.anchorNode?.nodeType === 3 ? sel.anchorNode.parentElement.closest('.line') : sel.anchorNode.closest('.line');
+            
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                if (!line) return;
+                const offset = sel.anchorOffset;
+                if (!line.innerText.trim()) line.innerHTML = "&#8203;"; 
+                let idx = elements.indexOf(line.dataset.type);
+                idx = e.shiftKey ? (idx - 1 + elements.length) % elements.length : (idx + 1) % elements.length;
+                line.className = `line ${elements[idx]}`;
+                line.dataset.type = elements[idx];
+                const range = document.createRange();
+                const node = line.firstChild || line;
+                range.setStart(node, Math.min(offset, node.length || 0));
+                range.collapse(true);
+                sel.removeAllRanges(); sel.addRange(range);
+                updateNavigator();
+                return;
+            }
+
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (!line) return;
+                const type = line.dataset.type;
+                const nextType = { "character": "dialogue", "scene-heading": "action", "dialogue": "action", "parenthetical": "dialogue" }[type] || "action";
+                const newLine = document.createElement('div');
+                newLine.className = `line ${nextType}`;
+                newLine.dataset.type = nextType;
+                newLine.innerHTML = "&#8203;"; 
+                line.after(newLine);
+                const range = document.createRange();
+                range.setStart(newLine.firstChild, 0);
+                range.collapse(true);
+                sel.removeAllRanges(); sel.addRange(range);
+                updateStats();
+                return;
+            }
+        });
+
+        [container, beatsBox, charsBox].forEach(box => {
+            box.addEventListener('input', () => {
+                if (box === container) autoCapitalize();
+                updateStats();
+                saveToCloud();
+            });
+        });
+
+        async function saveToCloud() {
+            if (currentUser) {
+                await setDoc(doc(db, "scripts", currentUser.uid), {
+                    content: container.innerHTML,
+                    beats: beatsBox.innerHTML,
+                    chars: charsBox.innerHTML
+                }, { merge: true });
+            }
         }
-    });
-}
 
-// --- UI HELPERS ---
-window.toggleLegend = () => {
-    const leg = document.getElementById('legend-overlay');
-    leg.style.display = (leg.style.display === 'none' || leg.style.display === '') ? 'flex' : 'none';
-};
-
-window.toggleDarkMode = () => document.body.classList.toggle('dark-mode');
-window.toggleFocusMode = () => document.body.classList.toggle('focus-mode');
-
-window.switchTab = (tab) => {
-    document.getElementById('tab-beats').style.display = tab === 'beats' ? 'block' : 'none';
-    document.getElementById('tab-chars').style.display = tab === 'chars' ? 'block' : 'none';
-    document.getElementById('btn-beats').className = tab === 'beats' ? 'btn btn-sm btn-info' : 'btn btn-sm btn-outline-info';
-    document.getElementById('btn-chars').className = tab === 'chars' ? 'btn btn-sm btn-info' : 'btn btn-sm btn-outline-info';
-};
-
-function autoCapitalize() {
-    const sel = window.getSelection();
-    const line = sel.anchorNode?.nodeType === 3 ? sel.anchorNode.parentElement.closest('.line') : sel.anchorNode.closest('.line');
-    if (line && (line.dataset.type === 'character' || line.dataset.type === 'scene-heading')) {
-        const pos = sel.anchorOffset;
-        line.innerText = line.innerText.toUpperCase();
-        const range = document.createRange();
-        if (line.firstChild) {
-            range.setStart(line.firstChild, Math.min(pos, line.innerText.length));
-            range.collapse(true);
-            sel.removeAllRanges(); sel.addRange(range);
+        function startSync(uid) {
+            onSnapshot(doc(db, "scripts", uid), (snap) => {
+                if (snap.exists()) {
+                    const data = snap.data();
+                    if (document.activeElement !== container) {
+                        container.innerHTML = data.content || '<div class="line scene-heading" data-type="scene-heading">&#8203;</div>';
+                        updateNavigator();
+                        updateStats();
+                    }
+                    if (document.activeElement !== beatsBox) beatsBox.innerHTML = data.beats || "<b>BEAT SHEET:</b>";
+                    if (document.activeElement !== charsBox) charsBox.innerHTML = data.chars || "<b>CHARACTERS:</b>";
+                }
+            });
         }
-    }
-}
 
-function updateNavigator() {
-    const list = document.getElementById('scene-list');
-    list.innerHTML = "";
-    container.querySelectorAll('.scene-heading').forEach((s) => {
-        const item = document.createElement('div');
-        item.className = 'nav-item mb-1';
-        item.innerText = s.innerText.trim() || "NEW SCENE";
-        item.onclick = () => s.scrollIntoView({ behavior: 'smooth' });
-        list.appendChild(item);
-    });
-}
+        window.toggleLegend = () => {
+            const leg = document.getElementById('legend-overlay');
+            leg.style.display = (leg.style.display === 'none' || leg.style.display === '') ? 'flex' : 'none';
+        };
 
-function updateStats() {
-    const words = container.innerText.trim().split(/\s+/).length;
-    // Calculation: 1056px is exactly 11 inches on standard DPI
-    const pages = Math.max(1, Math.ceil(container.scrollHeight / 1056)); 
-    document.getElementById('stat-pages').innerText = pages;
-    document.getElementById('stat-words').innerText = words;
-    document.getElementById('stat-time').innerText = `${pages}m 00s`;
-}
+        window.toggleDarkMode = () => document.body.classList.toggle('dark-mode');
+        window.toggleFocusMode = () => document.body.classList.toggle('focus-mode');
 
-window.exportToPDF = () => {
-    const opt = { margin: [1, 1, 1, 1.5], filename: 'script.pdf', jsPDF: { unit: 'in', format: 'letter' } };
-    html2pdf().set(opt).from(container).save();
-};
+        window.switchTab = (tab) => {
+            document.getElementById('tab-beats').style.display = tab === 'beats' ? 'block' : 'none';
+            document.getElementById('tab-chars').style.display = tab === 'chars' ? 'block' : 'none';
+            document.getElementById('btn-beats').className = tab === 'beats' ? 'btn btn-sm btn-info' : 'btn btn-sm btn-outline-info';
+            document.getElementById('btn-chars').className = tab === 'chars' ? 'btn btn-sm btn-info' : 'btn btn-sm btn-outline-info';
+        };
 
-window.saveVersion = async () => {
-    const name = prompt("Name this snapshot:");
-    if (!name) return;
-    await addDoc(collection(db, "scripts", currentUser.uid, "snapshots"), {
-        name, content: container.innerHTML, timestamp: new Date()
-    });
-    alert("Snapshot saved!");
-};
+        function autoCapitalize() {
+            const sel = window.getSelection();
+            const line = sel.anchorNode?.nodeType === 3 ? sel.anchorNode.parentElement.closest('.line') : sel.anchorNode.closest('.line');
+            if (line && (line.dataset.type === 'character' || line.dataset.type === 'scene-heading')) {
+                const pos = sel.anchorOffset;
+                line.innerText = line.innerText.toUpperCase();
+                const range = document.createRange();
+                if (line.firstChild) {
+                    range.setStart(line.firstChild, Math.min(pos, line.innerText.length));
+                    range.collapse(true);
+                    sel.removeAllRanges(); sel.addRange(range);
+                }
+            }
+        }
+
+        function updateNavigator() {
+            const list = document.getElementById('scene-list');
+            list.innerHTML = "";
+            container.querySelectorAll('.scene-heading').forEach((s) => {
+                const item = document.createElement('div');
+                item.className = 'nav-item mb-1';
+                item.innerText = s.innerText.trim() || "NEW SCENE";
+                item.onclick = () => s.scrollIntoView({ behavior: 'smooth' });
+                list.appendChild(item);
+            });
+        }
+
+        function updateStats() {
+            const words = container.innerText.trim().split(/\s+/).length;
+            const pages = Math.max(1, Math.ceil(container.scrollHeight / 1056)); 
+            document.getElementById('stat-pages').innerText = pages;
+            document.getElementById('stat-words').innerText = words;
+        }
+
+        window.exportToPDF = () => {
+            const opt = { margin: [1, 1, 1, 1.5], filename: 'script.pdf', jsPDF: { unit: 'in', format: 'letter' } };
+            html2pdf().set(opt).from(container).save();
+        };
+
+        window.saveVersion = async () => {
+            const name = prompt("Name this snapshot:");
+            if (!name) return;
+            await addDoc(collection(db, "scripts", currentUser.uid, "snapshots"), {
+                name, content: container.innerHTML, timestamp: new Date()
+            });
+            alert("Snapshot saved!");
+        };
     </script>
 </body>
 </html>
