@@ -38,13 +38,43 @@
         .nav-item { padding: 8px; font-size: 0.8rem; cursor: pointer; border-bottom: 1px solid #2d3436; text-transform: uppercase; border-radius: 4px; }
         .nav-item:hover { color: white; background: #2d3436; }
 
-        /* EDITOR */
-        #main-editor { flex-grow: 1; overflow-y: auto; display: flex; justify-content: center; padding: 40px 20px; scroll-behavior: smooth; }
-        #script-container { 
-            width: 8.5in; min-height: 11in; background: var(--bg-editor); 
-            padding: 1in 1in 1in 1.5in; box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
-            font-family: 'Courier Prime', Courier, monospace; font-size: 12pt; line-height: 1.2; outline: none;
-        }
+/* --- REPLACEMENT EDITOR & PAPER CSS --- */
+#main-editor { 
+    flex-grow: 1; 
+    overflow-y: auto; 
+    display: flex; 
+    justify-content: center; 
+    padding: 40px 20px; 
+    scroll-behavior: smooth; 
+    background: var(--bg-main); /* The "Desk" background */
+}
+
+#script-container { 
+    width: 8.5in; 
+    min-height: 11in; 
+    height: auto !important; /* Forces background to grow with text */
+    background-color: white !important; /* Standard script white */
+    
+    /* This draws a light grey line every 11 inches (1056px) */
+    background-image: linear-gradient(to bottom, transparent 10.99in, #e0e0e0 11in);
+    background-size: 100% 11in;
+    background-repeat: repeat-y;
+    
+    padding: 1in 1in 1in 1.5in; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2); 
+    font-family: 'Courier Prime', Courier, monospace; 
+    font-size: 12pt; 
+    line-height: 1.2; 
+    outline: none;
+    color: #000; /* Force black text for script readability */
+    box-sizing: border-box;
+}
+
+/* Ensure the dark mode doesn't turn the paper dark/grey while writing */
+body.dark-mode #script-container {
+    background-color: white !important;
+    color: black !important;
+}
 
         /* SCREENPLAY ELEMENTS */
         .line { min-height: 1.2em; outline: none; position: relative; }
@@ -207,29 +237,44 @@
                 updateNavigator();
             }
 
-            // SMART ENTER
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                const currentType = line.dataset.type;
-                const nextType = { "character": "dialogue", "scene-heading": "action", "dialogue": "action", "parenthetical": "dialogue" }[currentType] || "action";
-                const newLine = document.createElement('div');
-                newLine.className = `line ${nextType}`;
-                newLine.dataset.type = nextType;
-                newLine.innerHTML = "<br>"; 
-                line.after(newLine);
-                const range = document.createRange();
-                range.setStart(newLine, 0);
-                range.collapse(true);
-                sel.removeAllRanges();
-                sel.addRange(range);
-            }
-        });
+// --- UPDATED SMART ENTER ---
+if (e.key === 'Enter') {
+    e.preventDefault();
+    const currentType = line.dataset.type;
+    const nextType = { 
+        "character": "dialogue", 
+        "scene-heading": "action", 
+        "dialogue": "action", 
+        "parenthetical": "dialogue" 
+    }[currentType] || "action";
+    
+    const newLine = document.createElement('div');
+    newLine.className = `line ${nextType}`;
+    newLine.dataset.type = nextType;
+    newLine.innerHTML = "&#8203;"; // Zero-width space for better cursor anchoring
+    line.after(newLine);
+    
+    const range = document.createRange();
+    range.setStart(newLine.firstChild, 0);
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
+    
+    // Auto-scroll to keep the new line in view
+    newLine.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    updateStats();
+}
 
-        container.addEventListener('input', () => {
-            autoCapitalize();
-            updateStats();
-            saveToCloud();
-        });
+// --- UPDATED PAGE STATS ---
+function updateStats() {
+    const words = container.innerText.trim().split(/\s+/).length;
+    // 1056px is the standard pixel height for 11 inches at 96 DPI
+    const pages = Math.max(1, Math.ceil(container.scrollHeight / 1056)); 
+    
+    document.getElementById('stat-words').innerText = words;
+    // Update the Runtime display to show both Pages and Time
+    document.getElementById('stat-time').innerText = `${pages} Page(s) | ~${pages}m 00s`;
+}
 
         // --- FUNCTIONS ---
         window.toggleLegend = () => {
