@@ -17,7 +17,7 @@
             --desk-color: #2d3436;
         }
 
-        /* 1. LAYOUT ENGINE - INDESTRUCTIBLE ROW LOGIC */
+        /* 1. LAYOUT ENGINE */
         body { 
             margin: 0; display: flex; flex-direction: row; height: 100vh; width: 100vw; 
             background: #f4f7f6; transition: 0.3s; overflow: hidden; 
@@ -31,11 +31,10 @@
         #left-sidebar { width: var(--sidebar-width); border-right: 1px solid #2d3436; }
         #right-sidebar { width: var(--right-width); border-left: 1px solid #2d3436; }
 
-        /* FOCUS MODE TRIGGERS */
         body.focus-mode #left-sidebar { margin-left: calc(var(--sidebar-width) * -1); }
         body.focus-mode #right-sidebar { margin-right: calc(var(--right-width) * -1); }
 
-        /* 2. EDITOR - CONTINUOUS FLOW ENGINE */
+        /* 2. EDITOR ENGINE */
         #main-editor { 
             flex-grow: 1; overflow-y: auto; background: var(--desk-color); 
             padding: 40px 0; display: flex; flex-direction: column; align-items: center;
@@ -51,7 +50,7 @@
             margin-bottom: 500px; box-sizing: border-box;
         }
 
-        /* 3. ELEMENTS & PDF PROTECTION */
+        /* 3. SCREENPLAY ELEMENTS */
         .line { min-height: 1.2em; outline: none; margin: 0; width: 100%; }
         .scene-heading { text-transform: uppercase; font-weight: bold; margin-top: 25px; }
         .action { margin-top: 12px; }
@@ -60,8 +59,14 @@
         .parenthetical { margin-left: 1.5in; width: 2.5in; page-break-inside: avoid; }
         .transition { text-transform: uppercase; margin-left: 4.5in; margin-top: 12px; }
 
-        /* UI OVERLAYS */
-        #auth-overlay { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; background: #f4f7f6; }
+        /* 4. OVERLAYS (AUTH & HELP) */
+        #auth-overlay, #legend-overlay { 
+            position: fixed; inset: 0; z-index: 9999; 
+            display: flex; align-items: center; justify-content: center; 
+        }
+        #auth-overlay { background: #f4f7f6; }
+        #legend-overlay { background: rgba(0,0,0,0.85); display: none; cursor: pointer; }
+
         .story-box { background: rgba(255,255,255,0.05); min-height: 400px; border: 1px dashed #444; padding: 15px; color: #ddd; outline: none; }
         .nav-item { padding: 8px; font-size: 0.8rem; cursor: pointer; border-bottom: 1px solid #2d3436; text-transform: uppercase; border-radius: 4px; }
         kbd { background: #333; color: var(--accent); padding: 2px 4px; border-radius: 3px; font-weight: bold; }
@@ -82,14 +87,33 @@
         </div>
     </div>
 
+    <div id="legend-overlay" onclick="toggleLegend()">
+        <div class="card bg-dark text-white p-4 border-secondary shadow-lg" style="width: 450px;" onclick="event.stopPropagation()">
+            <h5 class="text-info">COMMANDS</h5>
+            <hr>
+            <p><kbd>Tab</kbd> Cycle Element (Scene → Action → Char → Dial)</p>
+            <p><kbd>Enter</kbd> Smart Jump (Char → Dial, Scene → Action)</p>
+            <p><kbd>Ctrl + \</kbd> Toggle Focus Mode</p>
+            <p><kbd>Ctrl + /</kbd> Toggle This Help Menu</p>
+            <div class="text-center mt-3 text-muted small">Click anywhere to close</div>
+        </div>
+    </div>
+
     <div id="left-sidebar">
         <h6 class="mb-3 text-muted small">SCENES</h6>
         <div id="scene-list" class="flex-grow-1 overflow-auto mb-3"></div>
-        <div class="small mb-3">Pages: <span id="stat-pages">1</span> | Words: <span id="stat-words">0</span></div>
+        
+        <h6 class="mb-3 text-muted small">STATS</h6>
+        <div class="small mb-4">
+            Pages: <span id="stat-pages">1</span><br>
+            Words: <span id="stat-words">0</span>
+        </div>
+
         <div class="d-grid gap-2">
+            <button class="btn btn-outline-info btn-sm" onclick="toggleLegend()">Help (Ctrl + /)</button>
             <button class="btn btn-outline-secondary btn-sm" onclick="toggleFocusMode()">Focus Mode</button>
             <button class="btn btn-success btn-sm" onclick="exportToPDF()">Export PDF</button>
-            <button class="btn btn-link btn-sm text-danger" onclick="signOutUser()">Sign Out</button>
+            <button class="btn btn-link btn-sm text-danger mt-3" onclick="signOutUser()">Sign Out</button>
         </div>
     </div>
 
@@ -146,8 +170,12 @@
 
         container.addEventListener('keydown', (e) => {
             const sel = window.getSelection();
-            // DEBUGGED LINE SELECTION
             const line = sel.anchorNode?.nodeType === 3 ? sel.anchorNode.parentElement.closest('.line') : sel.anchorNode?.closest?.('.line');
+            
+            // Shortut Handlers (Help & Focus)
+            if (e.ctrlKey && (e.key === '/' || e.code === 'Slash')) { e.preventDefault(); toggleLegend(); return; }
+            if (e.ctrlKey && e.key === '\\') { e.preventDefault(); toggleFocusMode(); return; }
+
             if (!line) return;
 
             if (e.key === 'Tab') {
@@ -191,8 +219,8 @@
                 if (snap.exists() && document.activeElement !== container) {
                     const data = snap.data();
                     container.innerHTML = data.content || '<div class="line scene-heading" data-type="scene-heading">INT. NEW PROJECT - DAY</div>';
-                    document.getElementById('beat-container').innerHTML = data.beats || "<b>BEATS:</b>";
-                    document.getElementById('char-container').innerHTML = data.chars || "<b>CHARS:</b>";
+                    document.getElementById('beat-container').innerHTML = data.beats || "<b>BEAT SHEET:</b>";
+                    document.getElementById('char-container').innerHTML = data.chars || "<b>CHARACTERS:</b>";
                     updateStats();
                     updateNavigator();
                 }
@@ -215,6 +243,11 @@
                 list.appendChild(item);
             });
         }
+
+        window.toggleLegend = () => {
+            const leg = document.getElementById('legend-overlay');
+            leg.style.display = leg.style.display === 'flex' ? 'none' : 'flex';
+        };
 
         window.toggleFocusMode = () => document.body.classList.toggle('focus-mode');
         window.switchTab = (tab) => {
