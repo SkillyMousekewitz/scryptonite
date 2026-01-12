@@ -65,6 +65,19 @@
             #main-editor { padding: 0; background: white; }
             #script-container { box-shadow: none; border: none; width: 100%; }
         }
+        kbd {
+    background-color: #333;
+    border-radius: 3px;
+    border: 1px solid #555;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.2), 0 2px 0 0 rgba(255,255,255,0.1) inset;
+    color: #00cec9;
+    display: inline-block;
+    font-size: 0.85em;
+    font-weight: 700;
+    line-height: 1;
+    padding: 2px 4px;
+    white-space: nowrap;
+}
     </style>
 </head>
 <body id="body">
@@ -116,7 +129,32 @@
             <div class="line action" data-type="action">Begin your masterpiece...</div>
         </div>
     </div>
-
+<div id="legend-overlay" onclick="toggleLegend()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:10001; align-items:center; justify-content:center; cursor:pointer;">
+    <div class="card bg-dark text-white p-4 border-secondary shadow-lg" style="width: 500px; cursor:default;" onclick="event.stopPropagation()">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0 text-info">SCRYPT<span class="text-white">ONITE</span> COMMANDS</h5>
+            <button class="btn-close btn-close-white" onclick="toggleLegend()"></button>
+        </div>
+        <table class="table table-dark table-hover mb-0" style="font-size: 0.9rem;">
+            <thead>
+                <tr class="text-muted">
+                    <th>ACTION</th>
+                    <th>RESULT</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td><kbd>Tab</kbd></td><td>Cycle: Heading → Action → Char → Dial</td></tr>
+                <tr><td><kbd>Shift</kbd> + <kbd>Tab</kbd></td><td>Cycle backward</td></tr>
+                <tr><td><kbd>Enter</kbd></td><td>Smart-jump to next logical element</td></tr>
+                <tr><td><kbd>Ctrl</kbd> + <kbd>\</kbd></td><td><b>Focus Mode:</b> Hide sidebars</td></tr>
+                <tr><td><kbd>Ctrl</kbd> + <kbd>/</kbd></td><td>Show/Hide this Legend</td></tr>
+                <tr><td><kbd>Ctrl</kbd> + <kbd>S</kbd></td><td>Manual Snapshot (Auto-saves anyway)</td></tr>
+                <tr><td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>N</kbd></td><td>Add Private Art/Script Note</td></tr>
+            </tbody>
+        </table>
+        <div class="text-center mt-3 text-muted small">Click anywhere outside to close</div>
+    </div>
+</div>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
         import { getFirestore, doc, setDoc, onSnapshot, collection, addDoc, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
@@ -279,6 +317,22 @@ const firebaseConfig = {
 
         function checkTutorial() { if (!localStorage.getItem('scryptonite_tutorial')) document.getElementById('tutorial-overlay').style.display = 'flex'; }
         window.closeTutorial = () => { document.getElementById('tutorial-overlay').style.display = 'none'; localStorage.setItem('scryptonite_tutorial', 'true'); };
+        // Toggle Function
+window.toggleLegend = () => {
+    const legend = document.getElementById('legend-overlay');
+    legend.style.display = (legend.style.display === 'none' || legend.style.display === '') ? 'flex' : 'none';
+};
+
+// Add this to your existing container 'keydown' listener
+container.addEventListener('keydown', (e) => {
+    // Existing code for Tab, Enter, etc...
+    
+    // NEW: Toggle Legend with Ctrl + /
+    if (e.ctrlKey && e.key === '/') {
+        e.preventDefault();
+        toggleLegend();
+    }
+});
     </script>
 </body>
 </html>
