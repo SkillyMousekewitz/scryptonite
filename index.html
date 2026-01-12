@@ -221,201 +221,211 @@ kbd {
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, onSnapshot, collection, addDoc, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+import { getFirestore, doc, setDoc, onSnapshot, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyCMJ8mkBdyhLDbC6RmaVK9zWl-XSms6RoA",
-            authDomain: "scryptonite-6a340.firebaseapp.com",
-            projectId: "scryptonite-6a340",
-            storageBucket: "scryptonite-6a340.firebasestorage.app",
-            messagingSenderId: "875468928578",
-            appId: "1:875468928578:web:524ae574d4c84593a49fdb",
-        };
+// --- FIREBASE CONFIGURATION ---
+const firebaseConfig = {
+    apiKey: "AIzaSyCMJ8mkBdyhLDbC6RmaVK9zWl-XSms6RoA",
+    authDomain: "scryptonite-6a340.firebaseapp.com",
+    projectId: "scryptonite-6a340",
+    storageBucket: "scryptonite-6a340.firebasestorage.app",
+    messagingSenderId: "875468928578",
+    appId: "1:875468928578:web:524ae574d4c84593a49fdb",
+};
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        const provider = new GoogleAuthProvider();
-        let currentUser = null;
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+let currentUser = null;
 
-        const container = document.getElementById('script-container');
-        const beatsBox = document.getElementById('beat-container');
-        const charsBox = document.getElementById('char-container');
-        const elements = ["scene-heading", "action", "character", "parenthetical", "dialogue", "transition"];
+const container = document.getElementById('script-container');
+const beatsBox = document.getElementById('beat-container');
+const charsBox = document.getElementById('char-container');
+const elements = ["scene-heading", "action", "character", "parenthetical", "dialogue", "transition"];
 
-        document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
-        window.signOutUser = () => signOut(auth);
+// --- AUTHENTICATION LOGIC ---
+document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
+window.signOutUser = () => signOut(auth);
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = user;
-                document.getElementById('auth-overlay').style.display = 'none';
-                startSync(user.uid);
-            } else {
-                document.getElementById('auth-overlay').style.display = 'flex';
-            }
-        });
+onAuthStateChanged(auth, (user) => {
+    if (user) {
+        currentUser = user;
+        document.getElementById('auth-overlay').style.display = 'none';
+        startSync(user.uid);
+    } else {
+        document.getElementById('auth-overlay').style.display = 'flex';
+    }
+});
 
-        // --- KEYBOARD ENGINE ---
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && (e.key === '/' || e.code === 'Slash')) { e.preventDefault(); toggleLegend(); return; }
-            if (e.ctrlKey && e.key === '\\') { e.preventDefault(); toggleFocusMode(); return; }
-            
-            if (!container.contains(document.activeElement)) return;
+// --- KEYBOARD ENGINE (TAB & ENTER LOGIC) ---
+document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && (e.key === '/' || e.code === 'Slash')) { e.preventDefault(); toggleLegend(); return; }
+    if (e.ctrlKey && e.key === '\\') { e.preventDefault(); toggleFocusMode(); return; }
+    
+    if (!container.contains(document.activeElement)) return;
 
-            const sel = window.getSelection();
-            const line = sel.anchorNode?.nodeType === 3 ? sel.anchorNode.parentElement.closest('.line') : sel.anchorNode.closest('.line');
-            
-            if (e.key === 'Tab') {
-                e.preventDefault();
-                if (!line) return;
-                const offset = sel.anchorOffset;
-                if (!line.innerText.trim()) line.innerHTML = "&#8203;";
-                let idx = elements.indexOf(line.dataset.type);
-                idx = e.shiftKey ? (idx - 1 + elements.length) % elements.length : (idx + 1) % elements.length;
-                line.className = `line ${elements[idx]}`;
-                line.dataset.type = elements[idx];
-                
-                const range = document.createRange();
-                const node = line.firstChild || line;
-                range.setStart(node, Math.min(offset, node.length || 0));
-                range.collapse(true);
-                sel.removeAllRanges(); sel.addRange(range);
+    const sel = window.getSelection();
+    // Anchor check for Table-based layout
+    const line = sel.anchorNode?.nodeType === 3 ? sel.anchorNode.parentElement.closest('.line') : sel.anchorNode.closest('.line');
+    
+    if (e.key === 'Tab') {
+        e.preventDefault();
+        if (!line) return;
+        
+        const offset = sel.anchorOffset;
+        if (!line.innerText.trim()) line.innerHTML = "&#8203;"; // Cursor anchor
+
+        let idx = elements.indexOf(line.dataset.type);
+        idx = e.shiftKey ? (idx - 1 + elements.length) % elements.length : (idx + 1) % elements.length;
+        line.className = `line ${elements[idx]}`;
+        line.dataset.type = elements[idx];
+        
+        // Restore Cursor Focus
+        const range = document.createRange();
+        const node = line.firstChild || line;
+        range.setStart(node, Math.min(offset, node.length || 0));
+        range.collapse(true);
+        sel.removeAllRanges(); sel.addRange(range);
+        updateNavigator();
+        return;
+    }
+
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        if (!line) return;
+        const type = line.dataset.type;
+        const nextType = { "character": "dialogue", "scene-heading": "action", "dialogue": "action", "parenthetical": "dialogue" }[type] || "action";
+        
+        const newLine = document.createElement('div');
+        newLine.className = `line ${nextType}`;
+        newLine.dataset.type = nextType;
+        newLine.innerHTML = "&#8203;"; 
+        line.after(newLine);
+
+        const range = document.createRange();
+        range.setStart(newLine.firstChild, 0);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+        return;
+    }
+
+    if (e.ctrlKey && e.shiftKey && e.key === 'N') {
+        e.preventDefault();
+        if (line) insertNote(line);
+    }
+});
+
+// --- CLOUD SYNC & STATS ---
+[container, beatsBox, charsBox].forEach(box => {
+    box.addEventListener('input', () => {
+        if (box === container) autoCapitalize();
+        updateStats();
+        saveToCloud();
+    });
+});
+
+async function saveToCloud() {
+    if (currentUser) {
+        await setDoc(doc(db, "scripts", currentUser.uid), {
+            content: container.innerHTML,
+            beats: beatsBox.innerHTML,
+            chars: charsBox.innerHTML
+        }, { merge: true });
+    }
+}
+
+function startSync(uid) {
+    onSnapshot(doc(db, "scripts", uid), (snap) => {
+        if (snap.exists()) {
+            const data = snap.data();
+            if (document.activeElement !== container) {
+                container.innerHTML = data.content || "";
                 updateNavigator();
-                return;
-            }
-
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                if (!line) return;
-                const type = line.dataset.type;
-                const nextType = { "character": "dialogue", "scene-heading": "action", "dialogue": "action", "parenthetical": "dialogue" }[type] || "action";
-                const newLine = document.createElement('div');
-                newLine.className = `line ${nextType}`;
-                newLine.dataset.type = nextType;
-                newLine.innerHTML = "&#8203;"; 
-                line.after(newLine);
-
-                const range = document.createRange();
-                range.setStart(newLine.firstChild, 0);
-                range.collapse(true);
-                sel.removeAllRanges();
-                sel.addRange(range);
-                return;
-            }
-
-            if (e.ctrlKey && e.shiftKey && e.key === 'N') {
-                e.preventDefault();
-                if (line) insertNote(line);
-            }
-        });
-
-        [container, beatsBox, charsBox].forEach(box => {
-            box.addEventListener('input', () => {
-                if (box === container) autoCapitalize();
                 updateStats();
-                saveToCloud();
-            });
-        });
-
-        window.switchTab = (tab) => {
-            document.getElementById('tab-beats').style.display = tab === 'beats' ? 'block' : 'none';
-            document.getElementById('tab-chars').style.display = tab === 'chars' ? 'block' : 'none';
-            document.getElementById('btn-beats').className = tab === 'beats' ? 'btn btn-sm btn-info' : 'btn btn-sm btn-outline-info';
-            document.getElementById('btn-chars').className = tab === 'chars' ? 'btn btn-sm btn-info' : 'btn btn-sm btn-outline-info';
-        };
-
-        window.toggleLegend = () => {
-            const leg = document.getElementById('legend-overlay');
-            leg.style.display = (leg.style.display === 'none' || leg.style.display === '') ? 'flex' : 'none';
-        };
-
-        window.toggleDarkMode = () => document.body.classList.toggle('dark-mode');
-        window.toggleFocusMode = () => document.body.classList.toggle('focus-mode');
-
-        async function saveToCloud() {
-            if (currentUser) {
-                await setDoc(doc(db, "scripts", currentUser.uid), {
-                    content: container.innerHTML,
-                    beats: beatsBox.innerHTML,
-                    chars: charsBox.innerHTML
-                }, { merge: true });
             }
+            if (document.activeElement !== beatsBox) beatsBox.innerHTML = data.beats || "<b>STORY BEATS:</b>";
+            if (document.activeElement !== charsBox) charsBox.innerHTML = data.chars || "<b>CHARACTERS:</b>";
         }
+    });
+}
 
-        function startSync(uid) {
-            onSnapshot(doc(db, "scripts", uid), (snap) => {
-                if (snap.exists()) {
-                    const data = snap.data();
-                    if (document.activeElement !== container) {
-                        container.innerHTML = data.content || "";
-                        updateNavigator();
-                        updateStats();
-                    }
-                    if (document.activeElement !== beatsBox) beatsBox.innerHTML = data.beats || "<b>BEATS:</b>";
-                    if (document.activeElement !== charsBox) charsBox.innerHTML = data.chars || "<b>CHARS:</b>";
-                }
-            });
+// --- UI HELPERS ---
+window.toggleLegend = () => {
+    const leg = document.getElementById('legend-overlay');
+    leg.style.display = (leg.style.display === 'none' || leg.style.display === '') ? 'flex' : 'none';
+};
+
+window.toggleDarkMode = () => document.body.classList.toggle('dark-mode');
+window.toggleFocusMode = () => document.body.classList.toggle('focus-mode');
+
+window.switchTab = (tab) => {
+    document.getElementById('tab-beats').style.display = tab === 'beats' ? 'block' : 'none';
+    document.getElementById('tab-chars').style.display = tab === 'chars' ? 'block' : 'none';
+    document.getElementById('btn-beats').className = tab === 'beats' ? 'btn btn-sm btn-info' : 'btn btn-sm btn-outline-info';
+    document.getElementById('btn-chars').className = tab === 'chars' ? 'btn btn-sm btn-info' : 'btn btn-sm btn-outline-info';
+};
+
+function autoCapitalize() {
+    const sel = window.getSelection();
+    const line = sel.anchorNode?.nodeType === 3 ? sel.anchorNode.parentElement.closest('.line') : sel.anchorNode.closest('.line');
+    if (line && (line.dataset.type === 'character' || line.dataset.type === 'scene-heading')) {
+        const pos = sel.anchorOffset;
+        line.innerText = line.innerText.toUpperCase();
+        const range = document.createRange();
+        if (line.firstChild) {
+            range.setStart(line.firstChild, Math.min(pos, line.innerText.length));
+            range.collapse(true);
+            sel.removeAllRanges(); sel.addRange(range);
         }
+    }
+}
 
-        function autoCapitalize() {
-            const sel = window.getSelection();
-            const line = sel.anchorNode?.nodeType === 3 ? sel.anchorNode.parentElement.closest('.line') : sel.anchorNode.closest('.line');
-            if (line && (line.dataset.type === 'character' || line.dataset.type === 'scene-heading')) {
-                const pos = sel.anchorOffset;
-                line.innerText = line.innerText.toUpperCase();
-                const range = document.createRange();
-                if (line.firstChild) {
-                    range.setStart(line.firstChild, Math.min(pos, line.innerText.length));
-                    range.collapse(true);
-                    sel.removeAllRanges(); sel.addRange(range);
-                }
-            }
-        }
+function updateNavigator() {
+    const list = document.getElementById('scene-list');
+    list.innerHTML = "";
+    container.querySelectorAll('.scene-heading').forEach((s) => {
+        const item = document.createElement('div');
+        item.className = 'nav-item mb-1';
+        item.innerText = s.innerText.trim() || "NEW SCENE";
+        item.onclick = () => s.scrollIntoView({ behavior: 'smooth' });
+        list.appendChild(item);
+    });
+}
 
-        function updateNavigator() {
-            const list = document.getElementById('scene-list');
-            list.innerHTML = "";
-            container.querySelectorAll('.scene-heading').forEach((s, i) => {
-                const item = document.createElement('div');
-                item.className = 'nav-item mb-1';
-                item.innerText = s.innerText.trim() || "NEW SCENE";
-                item.onclick = () => s.scrollIntoView({ behavior: 'smooth' });
-                list.appendChild(item);
-            });
-        }
+function updateStats() {
+    const words = container.innerText.trim().split(/\s+/).length;
+    // Updated for Table-based layout expansion
+    const pages = Math.max(1, Math.ceil(container.offsetHeight / 1056)); 
+    document.getElementById('stat-pages').innerText = pages;
+    document.getElementById('stat-words').innerText = words;
+    document.getElementById('stat-time').innerText = `${pages}m 00s`;
+}
 
-        function updateStats() {
-            const words = container.innerText.trim().split(/\s+/).length;
-            const pages = Math.max(1, Math.ceil(container.scrollHeight / 1056)); 
-            document.getElementById('stat-pages').innerText = pages;
-            document.getElementById('stat-words').innerText = words;
-            document.getElementById('stat-time').innerText = `${Math.floor(pages)}m ${Math.round((pages % 1) * 60)}s`;
-        }
+window.exportToPDF = () => {
+    const opt = { margin: [1, 1, 1, 1.5], filename: 'script.pdf', jsPDF: { unit: 'in', format: 'letter' } };
+    html2pdf().set(opt).from(container).save();
+};
 
-        window.exportToPDF = () => {
-            const opt = { margin: [1, 1, 1, 1.5], filename: 'script.pdf', jsPDF: { unit: 'in', format: 'letter' } };
-            html2pdf().set(opt).from(container).save();
-        };
+window.saveVersion = async () => {
+    const name = prompt("Name this snapshot:");
+    if (!name) return;
+    await addDoc(collection(db, "scripts", currentUser.uid, "snapshots"), {
+        name, content: container.innerHTML, timestamp: new Date()
+    });
+    alert("Snapshot saved!");
+};
 
-        window.saveVersion = async () => {
-            const name = prompt("Name this snapshot:");
-            if (!name) return;
-            await addDoc(collection(db, "scripts", currentUser.uid, "snapshots"), {
-                name, content: container.innerHTML, timestamp: new Date()
-            });
-            alert("Snapshot saved!");
-        };
-
-        function insertNote(line) {
-            const note = document.createElement('div');
-            note.className = 'script-note';
-            note.contentEditable = true;
-            note.innerText = "[ NOTE ]";
-            line.after(note);
-        }
+function insertNote(line) {
+    const note = document.createElement('div');
+    note.className = 'script-note';
+    note.contentEditable = true;
+    note.innerText = "[ NOTE ]";
+    line.after(note);
+}
     </script>
 </body>
 </html>
