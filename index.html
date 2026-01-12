@@ -11,6 +11,7 @@
     <style>
         :root {
             --sidebar-width: 280px;
+            --right-width: 300px;
             --bg-main: #f4f7f6;
             --bg-sidebar: #1a1c1e;
             --bg-editor: #ffffff;
@@ -22,97 +23,77 @@
         body.dark-mode {
             --bg-main: #0f1111;
             --bg-sidebar: #000000;
-            --bg-editor: #1c1e1e;
+            --bg-editor: #ffffff; /* Keep paper white for professional contrast */
             --text-main: #dfe6e9;
             --text-sidebar: #636e72;
         }
 
-        body { margin: 0; display: flex; height: 100vh; background: var(--bg-main); color: var(--text-main); transition: 0.3s; overflow: hidden; }
+        body { margin: 0; display: flex; flex-direction: row; height: 100vh; background: var(--bg-main); color: var(--text-main); transition: 0.3s; overflow: hidden; }
 
-        /* SIDEBAR */
-        #sidebar { 
-            width: var(--sidebar-width); background: var(--bg-sidebar); 
-            color: var(--text-sidebar); display: flex; flex-direction: column; 
-            padding: 20px; z-index: 100; transition: margin-left 0.3s ease;
+        /* SIDEBARS */
+        #left-sidebar, #right-sidebar { 
+            background: var(--bg-sidebar); color: var(--text-sidebar); 
+            display: flex; flex-direction: column; padding: 20px; z-index: 100; transition: 0.3s ease; flex-shrink: 0;
         }
+        #left-sidebar { width: var(--sidebar-width); border-right: 1px solid #2d3436; }
+        #right-sidebar { width: var(--right-width); border-left: 1px solid #2d3436; }
+
         .nav-item { padding: 8px; font-size: 0.8rem; cursor: pointer; border-bottom: 1px solid #2d3436; text-transform: uppercase; border-radius: 4px; }
         .nav-item:hover { color: white; background: #2d3436; }
 
-/* --- REPLACEMENT EDITOR & PAPER CSS --- */
-#main-editor { 
-    flex-grow: 1; 
-    overflow-y: auto; 
-    display: flex; 
-    justify-content: center; 
-    padding: 40px 20px; 
-    scroll-behavior: smooth; 
-    background: var(--bg-main); /* The "Desk" background */
-}
-
-#script-container { 
-    width: 8.5in; 
-    min-height: 11in; 
-    height: auto !important; /* Forces background to grow with text */
-    background-color: white !important; /* Standard script white */
-    
-    /* This draws a light grey line every 11 inches (1056px) */
-    background-image: linear-gradient(to bottom, transparent 10.99in, #e0e0e0 11in);
-    background-size: 100% 11in;
-    background-repeat: repeat-y;
-    
-    padding: 1in 1in 1in 1.5in; 
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2); 
-    font-family: 'Courier Prime', Courier, monospace; 
-    font-size: 12pt; 
-    line-height: 1.2; 
-    outline: none;
-    color: #000; /* Force black text for script readability */
-    box-sizing: border-box;
-}
-
-/* Ensure the dark mode doesn't turn the paper dark/grey while writing */
-body.dark-mode #script-container {
-    background-color: white !important;
-    color: black !important;
-}
+        /* EDITOR & HYBRID PAPER ENGINE */
+        #main-editor { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; scroll-behavior: smooth; }
+        
+        #script-container { 
+            width: 8.5in; 
+            min-height: 11in; 
+            height: auto !important;
+            background-color: white !important; 
+            /* Draws visual page break line every 11 inches */
+            background-image: linear-gradient(to bottom, transparent 10.99in, #e0e0e0 11in);
+            background-size: 100% 11in;
+            background-repeat: repeat-y;
+            padding: 1in 1in 1in 1.5in; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); 
+            font-family: 'Courier Prime', Courier, monospace; 
+            font-size: 12pt; line-height: 1.2; outline: none; color: #000;
+            margin-bottom: 400px; box-sizing: border-box;
+        }
 
         /* SCREENPLAY ELEMENTS */
-        .line { min-height: 1.2em; outline: none; position: relative; }
+        .line { min-height: 1.2em; outline: none; position: relative; margin: 0; width: 100%; }
         .scene-heading { text-transform: uppercase; font-weight: bold; margin-top: 25px; }
         .action { margin-top: 12px; }
         .character { margin-left: 2in; width: 4in; margin-top: 12px; text-transform: uppercase; }
         .parenthetical { margin-left: 1.5in; width: 2.5in; }
         .dialogue { margin-left: 1in; width: 3.5in; margin-bottom: 4px; }
         .transition { text-transform: uppercase; margin-left: 4.5in; margin-top: 12px; }
-        .script-note { background: rgba(253, 250, 114, 0.2); color: var(--text-main); padding: 10px; margin: 10px 0; border-left: 4px solid #f1c40f; font-family: sans-serif; font-size: 0.85rem; font-style: italic; }
+        .script-note { background: rgba(253, 250, 114, 0.4); color: #000; padding: 10px; margin: 10px 0; border-left: 4px solid #f1c40f; font-family: sans-serif; font-size: 0.85rem; font-style: italic; }
 
-        /* OVERLAYS */
-        body.focus-mode #sidebar { margin-left: calc(var(--sidebar-width) * -1); }
+        /* OVERLAYS & UI */
+        body.focus-mode #left-sidebar { margin-left: calc(var(--sidebar-width) * -1); }
+        body.focus-mode #right-sidebar { margin-right: calc(var(--right-width) * -1); }
+        
         #auth-overlay, #tutorial-overlay, #legend-overlay { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; }
         #auth-overlay, #tutorial-overlay { background: var(--bg-main); }
         #legend-overlay { background: rgba(0,0,0,0.85); z-index: 10001; cursor: pointer; }
 
-        @media print {
-            #sidebar, .script-note, #auth-overlay, #tutorial-overlay, #legend-overlay { display: none !important; }
-            #main-editor { padding: 0; background: white; }
-            #script-container { box-shadow: none; border: none; width: 100%; }
-        }
+        .story-box { background: rgba(255,255,255,0.05); min-height: 400px; font-size: 0.85rem; border: 1px dashed #444; padding: 15px; border-radius: 8px; outline: none; color: #ddd; }
+        kbd { background-color: #333; border-radius: 3px; color: #00cec9; padding: 2px 4px; font-size: 0.85em; font-weight: 700; border: 1px solid #555; }
 
-        kbd {
-            background-color: #333; border-radius: 3px; border: 1px solid #555;
-            box-shadow: 0 1px 1px rgba(0,0,0,0.2), 0 2px 0 0 rgba(255,255,255,0.1) inset;
-            color: #00cec9; display: inline-block; font-size: 0.85em;
-            font-weight: 700; line-height: 1; padding: 2px 4px; white-space: nowrap;
+        @media print {
+            #left-sidebar, #right-sidebar, .script-note, #auth-overlay, #legend-overlay { display: none !important; }
+            #main-editor { padding: 0; background: white; }
+            #script-container { box-shadow: none; border: none; width: 100%; background-image: none !important; }
         }
     </style>
 </head>
-<body id="body">
+<body>
 
     <div id="auth-overlay">
         <div class="card p-5 shadow-lg text-center" style="width: 400px; border-radius: 20px;">
             <h1 style="font-weight: 800; letter-spacing: -1px;">SCRYPT<span style="color:var(--accent)">ONITE</span></h1>
-            <p class="text-muted mb-4">Focus-driven screenwriting.</p>
-            <button id="login-btn" class="btn btn-dark w-100 py-3 mb-2">Sign in with Google</button>
+            <button id="login-btn" class="btn btn-dark w-100 py-3 mt-4">Sign in with Google</button>
         </div>
     </div>
 
@@ -120,52 +101,35 @@ body.dark-mode #script-container {
         <div class="card p-4 shadow-lg bg-dark text-white" style="max-width: 450px;">
             <h4>Welcome to Scryptonite</h4>
             <hr>
-            <p><strong>Tab:</strong> Cycle line types</p>
+            <p><strong>Tab:</strong> Cycle elements</p>
             <p><strong>Enter:</strong> Smart Next Line</p>
-            <p><strong>Ctrl + \ :</strong> Focus Mode</p>
-            <p><strong>Ctrl + / :</strong> Command Legend</p>
             <button class="btn btn-info w-100 mt-3" onclick="closeTutorial()">Start Writing</button>
         </div>
     </div>
 
     <div id="legend-overlay" style="display:none;" onclick="toggleLegend()">
-        <div class="card bg-dark text-white p-4 border-secondary shadow-lg" style="width: 500px; cursor:default;" onclick="event.stopPropagation()">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="mb-0 text-info">SCRYPT<span class="text-white">ONITE</span> COMMANDS</h5>
-                <button class="btn-close btn-close-white" onclick="toggleLegend()"></button>
-            </div>
-            <table class="table table-dark table-hover mb-0" style="font-size: 0.9rem;">
-                <thead><tr class="text-muted"><th>ACTION</th><th>RESULT</th></tr></thead>
-                <tbody>
-                    <tr><td><kbd>Tab</kbd></td><td>Cycle: Heading → Action → Char → Dial</td></tr>
-                    <tr><td><kbd>Enter</kbd></td><td>Smart-jump to next element</td></tr>
-                    <tr><td><kbd>Ctrl</kbd> + <kbd>\</kbd></td><td>Toggle Focus Mode (Sidebar)</td></tr>
-                    <tr><td><kbd>Ctrl</kbd> + <kbd>/</kbd></td><td>Toggle this Command Legend</td></tr>
-                    <tr><td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>N</kbd></td><td>Add Private Art/Script Note</td></tr>
-                </tbody>
-            </table>
-            <div class="text-center mt-3 text-muted small">Click anywhere outside to close</div>
+        <div class="card bg-dark text-white p-4 shadow-lg" style="width: 500px;" onclick="event.stopPropagation()">
+            <h5 class="text-info">COMMANDS</h5>
+            <hr>
+            <p><kbd>Tab</kbd> Cycle Elements</p>
+            <p><kbd>Enter</kbd> Smart Next Line</p>
+            <p><kbd>Ctrl + \</kbd> Focus Mode</p>
         </div>
     </div>
 
-    <div id="sidebar">
-        <h6 class="mb-3" style="letter-spacing: 2px; color: #555;">SCENES</h6>
+    <div id="left-sidebar">
+        <h6 class="mb-3 text-muted">SCENES</h6>
         <div id="scene-list" class="flex-grow-1 overflow-auto mb-3"></div>
-        
-        <h6 class="mb-2" style="letter-spacing: 2px; color: #555;">STATS</h6>
-        <div class="mb-4 small">
-            <div>Words: <span id="stat-words">0</span></div>
-            <div>Runtime: <span id="stat-time">0m 0s</span></div>
+        <div class="small mb-3">
+            Pages: <span id="stat-pages">1</span><br>
+            Words: <span id="stat-words">0</span>
         </div>
-
-        <div class="d-grid gap-2 mb-4">
+        <div class="d-grid gap-2">
             <button class="btn btn-outline-secondary btn-sm" onclick="toggleDarkMode()">Theme</button>
-            <button class="btn btn-outline-secondary btn-sm" onclick="toggleFocusMode()">Focus Mode</button>
+            <button class="btn btn-outline-secondary btn-sm" onclick="toggleFocusMode()">Focus</button>
             <button class="btn btn-outline-warning btn-sm" onclick="saveVersion()">Snapshot</button>
-            <button class="btn btn-outline-info btn-sm" onclick="showVersionHistory()">History</button>
-            <button class="btn btn-outline-info btn-sm" onclick="toggleLegend()">Help (Ctrl+/)</button>
+            <button class="btn btn-outline-info btn-sm" onclick="toggleLegend()">Help</button>
             <button class="btn btn-success btn-sm" onclick="exportToPDF()">PDF</button>
-            <button class="btn btn-info btn-sm" onclick="exportToFountain()">Fountain</button>
             <button class="btn btn-link btn-sm text-danger mt-3" onclick="signOutUser()">Sign Out</button>
         </div>
     </div>
@@ -175,6 +139,15 @@ body.dark-mode #script-container {
             <div class="line scene-heading" data-type="scene-heading">INT. NEW PROJECT - DAY</div>
             <div class="line action" data-type="action">Begin your masterpiece...</div>
         </div>
+    </div>
+
+    <div id="right-sidebar">
+        <div class="btn-group mb-3 w-100">
+            <button id="btn-beats" class="btn btn-sm btn-info" onclick="switchTab('beats')">BEATS</button>
+            <button id="btn-chars" class="btn btn-sm btn-outline-info" onclick="switchTab('chars')">CHARS</button>
+        </div>
+        <div id="tab-beats"><div id="beat-container" contenteditable="true" class="story-box"><b>BEATS:</b><br></div></div>
+        <div id="tab-chars" style="display:none;"><div id="char-container" contenteditable="true" class="story-box"><b>CHARS:</b><br></div></div>
     </div>
 
     <script type="module">
@@ -189,7 +162,6 @@ body.dark-mode #script-container {
             storageBucket: "scryptonite-6a340.firebasestorage.app",
             messagingSenderId: "875468928578",
             appId: "1:875468928578:web:524ae574d4c84593a49fdb",
-            measurementId: "G-RPGWSZXJYF"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -197,12 +169,9 @@ body.dark-mode #script-container {
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
         let currentUser = null;
+
         const container = document.getElementById('script-container');
         const elements = ["scene-heading", "action", "character", "parenthetical", "dialogue", "transition"];
-
-        // --- AUTH ---
-        document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
-        window.signOutUser = () => signOut(auth);
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
@@ -215,19 +184,14 @@ body.dark-mode #script-container {
             }
         });
 
-        // --- CORE ENGINE ---
+        document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
+        window.signOutUser = () => signOut(auth);
+
         container.addEventListener('keydown', (e) => {
             const sel = window.getSelection();
             const line = sel.anchorNode?.parentElement?.closest('.line');
-            
-            // KEYBOARD COMMANDS
-            if (e.ctrlKey && (e.key === '/' || e.code === 'Slash')) { e.preventDefault(); toggleLegend(); return; }
-            if (e.ctrlKey && e.key === '\\') { e.preventDefault(); toggleFocusMode(); return; }
-            if (e.ctrlKey && e.shiftKey && e.key === 'N') { e.preventDefault(); insertNote(line); return; }
-            
             if (!line) return;
 
-            // TAB ELEMENT CYCLE
             if (e.key === 'Tab') {
                 e.preventDefault();
                 let idx = elements.indexOf(line.dataset.type);
@@ -237,53 +201,82 @@ body.dark-mode #script-container {
                 updateNavigator();
             }
 
-// --- UPDATED SMART ENTER ---
-if (e.key === 'Enter') {
-    e.preventDefault();
-    const currentType = line.dataset.type;
-    const nextType = { 
-        "character": "dialogue", 
-        "scene-heading": "action", 
-        "dialogue": "action", 
-        "parenthetical": "dialogue" 
-    }[currentType] || "action";
-    
-    const newLine = document.createElement('div');
-    newLine.className = `line ${nextType}`;
-    newLine.dataset.type = nextType;
-    newLine.innerHTML = "&#8203;"; // Zero-width space for better cursor anchoring
-    line.after(newLine);
-    
-    const range = document.createRange();
-    range.setStart(newLine.firstChild, 0);
-    range.collapse(true);
-    sel.removeAllRanges();
-    sel.addRange(range);
-    
-    // Auto-scroll to keep the new line in view
-    newLine.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    updateStats();
-}
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const nextType = { "character": "dialogue", "scene-heading": "action", "dialogue": "action" }[line.dataset.type] || "action";
+                const newLine = document.createElement('div');
+                newLine.className = `line ${nextType}`;
+                newLine.dataset.type = nextType;
+                newLine.innerHTML = "&#8203;";
+                line.after(newLine);
+                const range = document.createRange();
+                range.setStart(newLine.firstChild, 0);
+                range.collapse(true);
+                sel.removeAllRanges(); sel.addRange(range);
+                newLine.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        });
 
-// --- UPDATED PAGE STATS ---
-function updateStats() {
-    const words = container.innerText.trim().split(/\s+/).length;
-    // 1056px is the standard pixel height for 11 inches at 96 DPI
-    const pages = Math.max(1, Math.ceil(container.scrollHeight / 1056)); 
-    
-    document.getElementById('stat-words').innerText = words;
-    // Update the Runtime display to show both Pages and Time
-    document.getElementById('stat-time').innerText = `${pages} Page(s) | ~${pages}m 00s`;
-}
+        container.addEventListener('input', () => {
+            autoCapitalize();
+            updateStats();
+            saveToCloud();
+        });
 
-        // --- FUNCTIONS ---
+        async function saveToCloud() {
+            if (currentUser) {
+                await setDoc(doc(db, "scripts", currentUser.uid), {
+                    content: container.innerHTML,
+                    beats: document.getElementById('beat-container').innerHTML,
+                    chars: document.getElementById('char-container').innerHTML
+                }, { merge: true });
+            }
+        }
+
+        function startSync(uid) {
+            onSnapshot(doc(db, "scripts", uid), (snap) => {
+                if (snap.exists() && document.activeElement !== container) {
+                    const data = snap.data();
+                    container.innerHTML = data.content;
+                    document.getElementById('beat-container').innerHTML = data.beats || "<b>BEATS:</b>";
+                    document.getElementById('char-container').innerHTML = data.chars || "<b>CHARS:</b>";
+                    updateNavigator();
+                    updateStats();
+                }
+            });
+        }
+
+        function updateStats() {
+            const words = container.innerText.trim().split(/\s+/).length;
+            const pages = Math.max(1, Math.ceil(container.scrollHeight / 1056)); 
+            document.getElementById('stat-words').innerText = words;
+            document.getElementById('stat-pages').innerText = pages;
+        }
+
+        function updateNavigator() {
+            const list = document.getElementById('scene-list');
+            list.innerHTML = "";
+            container.querySelectorAll('.scene-heading').forEach(s => {
+                const item = document.createElement('div');
+                item.className = 'nav-item mb-1';
+                item.innerText = s.innerText || "NEW SCENE";
+                item.onclick = () => s.scrollIntoView({ behavior: 'smooth' });
+                list.appendChild(item);
+            });
+        }
+
         window.toggleLegend = () => {
-            const legend = document.getElementById('legend-overlay');
-            legend.style.display = (legend.style.display === 'none' || legend.style.display === '') ? 'flex' : 'none';
+            const leg = document.getElementById('legend-overlay');
+            leg.style.display = leg.style.display === 'flex' ? 'none' : 'flex';
         };
 
         window.toggleDarkMode = () => document.body.classList.toggle('dark-mode');
         window.toggleFocusMode = () => document.body.classList.toggle('focus-mode');
+
+        window.switchTab = (tab) => {
+            document.getElementById('tab-beats').style.display = tab === 'beats' ? 'block' : 'none';
+            document.getElementById('tab-chars').style.display = tab === 'chars' ? 'block' : 'none';
+        };
 
         function autoCapitalize() {
             const sel = window.getSelection();
@@ -295,92 +288,15 @@ function updateStats() {
                 if (line.firstChild) {
                     range.setStart(line.firstChild, Math.min(pos, line.innerText.length));
                     range.collapse(true);
-                    sel.removeAllRanges();
-                    sel.addRange(range);
+                    sel.removeAllRanges(); sel.addRange(range);
                 }
             }
         }
-
-        function updateNavigator() {
-            const list = document.getElementById('scene-list');
-            list.innerHTML = "";
-            container.querySelectorAll('.scene-heading').forEach((s, i) => {
-                const item = document.createElement('div');
-                item.className = 'nav-item mb-1';
-                item.innerText = s.innerText || "NEW SCENE";
-                item.onclick = () => s.scrollIntoView({ behavior: 'smooth' });
-                list.appendChild(item);
-            });
-        }
-
-        window.saveVersion = async () => {
-            const name = prompt("Name this snapshot:");
-            if (!name) return;
-            await addDoc(collection(db, "scripts", currentUser.uid, "snapshots"), {
-                name, content: container.innerHTML, timestamp: new Date()
-            });
-            alert("Snapshot saved!");
-        };
-
-        window.showVersionHistory = async () => {
-            const q = query(collection(db, "scripts", currentUser.uid, "snapshots"), orderBy("timestamp", "desc"));
-            const snap = await getDocs(q);
-            let html = "<h6 class='text-info mt-2'>HISTORY</h6>";
-            snap.forEach(doc => {
-                html += `<div class="nav-item mb-2" onclick="restoreVersion('${doc.id}')">${doc.data().name}<br><small>${doc.data().timestamp.toDate().toLocaleDateString()}</small></div>`;
-            });
-            document.getElementById('scene-list').innerHTML = html;
-        };
 
         window.exportToPDF = () => {
             const opt = { margin: [1, 1, 1, 1.5], filename: 'script.pdf', jsPDF: { unit: 'in', format: 'letter' } };
             html2pdf().set(opt).from(container).save();
         };
-
-        window.exportToFountain = () => {
-            let text = "";
-            container.querySelectorAll('.line').forEach(l => {
-                const type = l.dataset.type;
-                const val = l.innerText.trim();
-                if (!val) return;
-                if (type === 'scene-heading') text += `\n${val.toUpperCase()}\n\n`;
-                else if (type === 'character') text += `\n${val.toUpperCase()}\n`;
-                else if (type === 'parenthetical') text += `(${val})\n`;
-                else text += `${val}\n\n`;
-            });
-            const blob = new Blob([text], {type: "text/plain"});
-            const a = document.createElement("a");
-            a.href = URL.createObjectURL(blob);
-            a.download = "script.fountain";
-            a.click();
-        };
-
-        function insertNote(line) {
-            const note = document.createElement('div');
-            note.className = 'script-note';
-            note.contentEditable = true;
-            note.innerText = "[ NOTE: Art Reminder ]";
-            line.after(note);
-        }
-
-        function updateStats() {
-            const words = container.innerText.trim().split(/\s+/).length;
-            const pages = container.scrollHeight / 1056; 
-            document.getElementById('stat-words').innerText = words;
-            document.getElementById('stat-time').innerText = `${Math.floor(pages)}m ${Math.round((pages % 1) * 60)}s`;
-        }
-
-        async function saveToCloud() { if (currentUser) await setDoc(doc(db, "scripts", currentUser.uid), { content: container.innerHTML }, { merge: true }); }
-        
-        function startSync(uid) {
-            onSnapshot(doc(db, "scripts", uid), (doc) => {
-                if (doc.exists() && document.activeElement !== container) {
-                    container.innerHTML = doc.data().content;
-                    updateNavigator();
-                    updateStats();
-                }
-            });
-        }
 
         function checkTutorial() { if (!localStorage.getItem('scryptonite_tutorial')) document.getElementById('tutorial-overlay').style.display = 'flex'; }
         window.closeTutorial = () => { document.getElementById('tutorial-overlay').style.display = 'none'; localStorage.setItem('scryptonite_tutorial', 'true'); };
