@@ -1,0 +1,68 @@
+:root {
+    --sidebar-width: 280px;
+    --right-width: 300px;
+    --bg-sidebar: #1a1c1e;
+    --accent: #00cec9;
+    --desk-color: #2d3436;
+}
+
+/* 1. LAYOUT ENGINE */
+body { 
+    margin: 0; display: flex; flex-direction: row; height: 100vh; width: 100vw; 
+    background: #f4f7f6; transition: 0.3s; overflow: hidden; 
+}
+
+#left-sidebar, #right-sidebar { 
+    background: var(--bg-sidebar); color: #b2bec3; 
+    display: flex; flex-direction: column; padding: 20px; z-index: 100; flex-shrink: 0;
+    transition: margin 0.3s ease;
+}
+#left-sidebar { width: var(--sidebar-width); border-right: 1px solid #2d3436; }
+#right-sidebar { width: var(--right-width); border-left: 1px solid #2d3436; }
+
+/* FOCUS MODE */
+body.focus-mode #left-sidebar { margin-left: calc(var(--sidebar-width) * -1); }
+body.focus-mode #right-sidebar { margin-right: calc(var(--right-width) * -1); }
+
+/* 2. CONTINUOUS PAPER ENGINE */
+#main-editor { 
+    flex-grow: 1; overflow-y: auto; background: var(--desk-color); 
+    padding: 40px 0; display: flex; flex-direction: column; align-items: center;
+}
+
+#script-container { 
+    width: 8.5in; min-height: 11in; height: auto !important;
+    background-color: white !important; 
+    padding: 1in 1in 1in 1.5in; 
+    box-shadow: 0 0 40px rgba(0,0,0,0.5); 
+    font-family: 'Courier Prime', Courier, monospace; 
+    font-size: 12pt; line-height: 1.2; outline: none; color: #000;
+    margin-bottom: 500px; box-sizing: border-box;
+}
+
+/* 3. ELEMENTS & PDF PROTECTION */
+.line { min-height: 1.2em; outline: none; margin: 0; width: 100%; }
+.scene-heading { text-transform: uppercase; font-weight: bold; margin-top: 25px; }
+.action { margin-top: 12px; }
+.character { margin-left: 2in; width: 4in; margin-top: 12px; text-transform: uppercase; page-break-after: avoid; }
+.dialogue { margin-left: 1in; width: 3.5in; page-break-inside: avoid; margin-bottom: 4px; }
+.parenthetical { margin-left: 1.5in; width: 2.5in; page-break-inside: avoid; }
+.transition { text-transform: uppercase; margin-left: 4.5in; margin-top: 12px; }
+
+/* 4. OVERLAYS */
+#auth-overlay, #legend-overlay { 
+    position: fixed; inset: 0; z-index: 9999; 
+    display: flex; align-items: center; justify-content: center; 
+}
+#auth-overlay { background: #f4f7f6; }
+#legend-overlay { background: rgba(0,0,0,0.85); display: none; cursor: pointer; }
+
+.story-box { background: rgba(255,255,255,0.05); min-height: 400px; border: 1px dashed #444; padding: 15px; color: #ddd; outline: none; }
+.nav-item { padding: 8px; font-size: 0.8rem; cursor: pointer; border-bottom: 1px solid #2d3436; text-transform: uppercase; border-radius: 4px; }
+kbd { background: #333; color: var(--accent); padding: 2px 4px; border-radius: 3px; font-weight: bold; }
+
+@media print {
+    #left-sidebar, #right-sidebar, #auth-overlay { display: none !important; }
+    #main-editor { padding: 0; background: white; }
+    #script-container { box-shadow: none; width: 100%; margin: 0; padding: 1in 1in 1in 1.5in; }
+}
