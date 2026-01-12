@@ -4,65 +4,59 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scryptonite | Screenwriter</title>
-    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    
     <link rel="stylesheet" href="style.css">
+    
+    <style>
+        /* IN-LINE BRUTE FORCE FIX */
+        #main-editor {
+            background-color: #2d3436 !important;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 40px;
+        }
+        .paper-page {
+            display: block !important;
+            background-color: white !important;
+            width: 8.5in !important;
+            height: 11in !important;
+            padding: 1in 1in 1in 1.5in !important;
+            margin-bottom: 30px !important;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5) !important;
+            color: black !important;
+            font-family: 'Courier Prime', monospace !important;
+            box-sizing: border-box !important;
+            overflow: hidden !important;
+        }
+    </style>
 </head>
-<body id="body">
-
+<body>
     <div id="auth-overlay">
         <div class="card p-5 shadow text-center" style="width: 400px; border-radius: 20px;">
-            <h1 style="font-weight: 800; letter-spacing: -1px;">SCRYPT<span style="color:var(--accent)">ONITE</span></h1>
+            <h1>SCRYPT<span style="color:#00cec9">ONITE</span></h1>
             <button id="login-btn" class="btn btn-dark w-100 py-3 mt-4">Sign in with Google</button>
         </div>
     </div>
-
-    <div id="legend-overlay">
-        <div class="card bg-dark text-white p-4 border-secondary shadow-lg" style="width: 450px;">
-            <h5 class="text-info">COMMANDS</h5>
-            <hr>
-            <p><kbd>Tab</kbd> Cycle Element (Scene → Action → Char → Dial)</p>
-            <p><kbd>Enter</kbd> Smart Jump (Char → Dial, Scene → Action)</p>
-            <p><kbd>Ctrl + \</kbd> Toggle Focus Mode</p>
-            <p><kbd>Ctrl + /</kbd> Toggle This Help Menu</p>
-            <div class="text-center mt-3 text-muted small">Click anywhere to close</div>
-        </div>
-    </div>
-
+    
     <div id="left-sidebar">
-        <h6 class="mb-3 text-muted small">SCENES</h6>
-        <div id="scene-list" class="flex-grow-1 overflow-auto mb-3"></div>
-        
-        <h6 class="mb-3 text-muted small">STATS</h6>
-        <div class="small mb-4">
-            Pages: <span id="stat-pages">1</span><br>
-            Words: <span id="stat-words">0</span>
-        </div>
-
+        <div id="scene-list" class="flex-grow-1"></div>
+        <div class="small mb-4">Pages: <span id="stat-pages">1</span> | Words: <span id="stat-words">0</span></div>
         <div class="d-grid gap-2">
-            <button class="btn btn-outline-info btn-sm" id="help-btn">Help (Ctrl + /)</button>
-            <button class="btn btn-outline-secondary btn-sm" id="focus-btn">Focus Mode</button>
+            <button class="btn btn-outline-info btn-sm" id="help-btn">Help</button>
+            <button class="btn btn-outline-secondary btn-sm" id="focus-btn">Focus</button>
             <button class="btn btn-success btn-sm" id="pdf-btn">Export PDF</button>
-            <button class="btn btn-link btn-sm text-danger mt-3" id="logout-btn">Sign Out</button>
+            <button class="btn btn-link btn-sm text-danger" id="logout-btn">Sign Out</button>
         </div>
     </div>
 
-<div id="main-editor">
-    <div class="paper-page" contenteditable="true">
-        <div class="line scene-heading" data-type="scene-heading">INT. NEW PROJECT - DAY</div>
-    </div>
-</div>
-
-    <div id="right-sidebar">
-        <div class="btn-group mb-3 w-100">
-            <button class="btn btn-sm btn-info" id="beats-tab-btn">BEATS</button>
-            <button class="btn btn-sm btn-outline-info" id="chars-tab-btn">CHARS</button>
+    <div id="main-editor">
+        <div class="paper-page" contenteditable="true">
+            <div class="line scene-heading" data-type="scene-heading">INT. NEW PROJECT - DAY</div>
         </div>
-        <div id="tab-beats"><div id="beat-container" contenteditable="true" class="story-box"><b>BEAT SHEET:</b></div></div>
-        <div id="tab-chars" style="display:none;"><div id="char-container" contenteditable="true" class="story-box"><b>CHARACTERS:</b></div></div>
     </div>
 
     <script type="module" src="script.js"></script>
