@@ -1,45 +1,52 @@
 /**
- * script.js - Final Integrated Scriptwriting Engine
+ * script.js - Final Stable Scriptwriting Engine
  */
 
-// --- 1. CONFIGURATION & STATE ---
+// --- 1. SETTINGS & ELEMENTS ---
 const editor = document.getElementById('editor');
 const suggestionMenu = document.getElementById('character-suggestions');
 const modes = ['action', 'scene-heading', 'character', 'parenthetical', 'dialogue', 'transition'];
 let selectedIndex = -1;
 
-// --- 2. INITIALIZATION ---
+// --- 2. STARTUP & AUTO-SAVE ---
 window.addEventListener('DOMContentLoaded', () => {
     const savedContent = localStorage.getItem('script-draft');
     if (savedContent && savedContent.trim() !== "") {
         editor.innerHTML = savedContent;
-        const firstPara = editor.querySelector('p');
-        if (firstPara) updateHelpSidebar(getModeFromElement(firstPara));
     } else {
+        // Starts the script with a Scene Heading line
         editor.innerHTML = '<p class="scene-heading">&#xfeff;</p>';
-        updateHelpSidebar('scene-heading');
     }
+    updateHelpSidebar(getModeFromElement(editor.querySelector('p')));
 });
 
-// Auto-save whenever the user types
+// Save work every time you type
 editor.addEventListener('input', () => {
     localStorage.setItem('script-draft', editor.innerHTML);
     handleAutocomplete();
 });
 
-// --- 3. CORE KEYBOARD ENGINE (Tab, Enter, Arrows) ---
+// --- 3. KEYBOARD ENGINE (The logic for Tab, Enter, and Arrows) ---
 editor.addEventListener('keydown', function(e) {
     const selection = window.getSelection();
-    if (!selection.rangeCount) return;
+    if (!selection || !selection.rangeCount) return;
 
     let currentElement = selection.anchorNode.parentElement.closest('p');
     
+    // Ensure we are typing inside a paragraph tag
     if (!currentElement || currentElement.id === 'editor') {
         document.execCommand('formatBlock', false, 'p');
         currentElement = selection.anchorNode.parentElement.closest('p');
     }
 
-    // A. Autocomplete Navigation
+    // A. THE "FREEZE" PREVENTER
+    // If Tab or Enter is pressed, we close the character menu immediately
+    if (e.key === 'Tab' || e.key === 'Enter') {
+        hideMenu();
+    }
+
+    // B. AUTOCOMPLETE NAVIGATION
+    // Controls the arrow keys when the character list is visible
     if (suggestionMenu.style.display === 'block') {
         const items = suggestionMenu.querySelectorAll('.list-group-item');
         if (e.key === 'ArrowDown') {
@@ -52,59 +59,41 @@ editor.addEventListener('keydown', function(e) {
             selectedIndex = (selectedIndex - 1 + items.length) % items.length;
             updateActiveSuggestion(items);
             return;
-        } else if (e.key === 'Enter' && selectedIndex > -1) {
-            e.preventDefault();
-            // Manually trigger the mousedown logic for the selected item
-            items[selectedIndex].dispatchEvent(new Event('mousedown'));
-            return;
-        } else if (e.key === 'Escape') {
-            hideMenu();
-            return;
         }
     }
 
-// B. Robust Tab Cycling (FIXED)
+    // C. TAB CYCLING
+    // Changes the line format (Action -> Scene -> Character, etc.)
     if (e.key === 'Tab') {
         e.preventDefault();
-
-        // KILL MENU: This stops the freeze when tabbing out of a character name
-        if (suggestionMenu.style.display === 'block') {
-            hideMenu();
-        }
 
         let currentClass = getModeFromElement(currentElement);
         let currentIndex = modes.indexOf(currentClass);
 
+        // Move forward with Tab, backward with Shift+Tab
         currentIndex = e.shiftKey ? (currentIndex - 1 + modes.length) % modes.length : (currentIndex + 1) % modes.length;
 
         currentElement.className = modes[currentIndex];
         
-        // RE-FOCUS: Keeps the cursor alive even if the line is empty
+        // Fix for empty lines: keeps them active so you can keep tabbing
         if (currentElement.innerText.trim() === "") {
-            currentElement.innerHTML = "&#xfeff;";
+            currentElement.innerHTML = "&#xfeff;"; 
             placeCursorAtEnd(currentElement);
         }
 
         updateHelpSidebar(modes[currentIndex]);
-        return; // Prevents the event from bubbling
+        return; 
     }
 
-// C. Smart Enter Logic (FIXED)
+    // D. SMART ENTER
+    // Automatically sets the next line format (Character -> Dialogue)
     if (e.key === 'Enter') {
-        // CLOSE MENU: Prevents the menu from 'hanging' when you start a new line
-        if (suggestionMenu.style.display === 'block') {
-            hideMenu();
-        }
-
         setTimeout(() => {
             const newSelection = window.getSelection();
-            if (!newSelection.rangeCount) return;
-
             const newElement = newSelection.anchorNode.parentElement.closest('p');
             const prevElement = newElement ? newElement.previousElementSibling : null;
 
             if (prevElement && newElement) {
-                // Auto-format based on the previous line
                 if (prevElement.classList.contains('character')) newElement.className = 'dialogue';
                 else if (prevElement.classList.contains('scene-heading')) newElement.className = 'action';
                 else if (prevElement.classList.contains('parenthetical')) newElement.className = 'dialogue';
@@ -114,39 +103,30 @@ editor.addEventListener('keydown', function(e) {
                     newElement.innerHTML = "&#xfeff;";
                     placeCursorAtEnd(newElement);
                 }
-                
                 updateHelpSidebar(newElement.className);
             }
-        }, 20); 
+        }, 30); // 30ms delay prevents the "freeze" on faster computers
     }
 });
 
-// --- 4. AUTOCOMPLETE ENGINE ---
+// --- 4. CHARACTER AUTOCOMPLETE FUNCTIONS ---
 function handleAutocomplete() {
     const selection = window.getSelection();
     if (!selection.rangeCount) return;
-    
-    // Find the paragraph the user is currently typing in
     const currentElement = selection.anchorNode.parentElement.closest('p');
 
-    // Only run if we are currently in a 'character' block
     if (currentElement && currentElement.classList.contains('character')) {
-        
-        // REWRITE: We strip the invisible zero-width space (\uFEFF) 
-        // so the search query is clean and doesn't "freeze" the logic.
+        // Clean the text to search for names correctly
         const query = currentElement.innerText.replace(/\uFEFF/g, "").trim().toUpperCase();
-        
         const characters = getExistingCharacters();
         const matches = characters.filter(char => char.startsWith(query) && char !== query);
 
-        // Show the menu if there are matches, otherwise hide it
         if (matches.length > 0 && query.length > 0) {
             showSuggestions(matches, currentElement);
         } else {
             hideMenu();
         }
     } else {
-        // Hide menu if we move to a non-character line (like Dialogue or Action)
         hideMenu();
     }
 }
@@ -163,7 +143,8 @@ function showSuggestions(matches, targetEl) {
         const item = document.createElement('button');
         item.classList.add('list-group-item', 'list-group-item-action', 'py-1');
         item.innerText = name;
-        // Use mousedown to prevent editor focus loss
+        
+        // Mousedown works better than "Click" in editors to prevent freezing
         item.onmousedown = (e) => {
             e.preventDefault(); 
             targetEl.innerText = name;
@@ -174,7 +155,7 @@ function showSuggestions(matches, targetEl) {
     });
 }
 
-// --- 5. UI HELPERS ---
+// --- 5. UI & SIDEBAR HELPERS ---
 function updateHelpSidebar(activeMode) {
     const listItems = document.querySelectorAll('.list-group-item');
     listItems.forEach(item => {
@@ -201,10 +182,11 @@ function hideMenu() {
 }
 
 function getModeFromElement(el) {
+    if (!el) return 'action';
     return modes.find(cls => el.classList.contains(cls)) || 'action';
 }
 
-// --- 6. UTILITIES ---
+// --- 6. UTILITIES (Formatting and File Management) ---
 function getExistingCharacters() {
     const names = new Set();
     document.querySelectorAll('.character').forEach(el => {
@@ -244,12 +226,12 @@ function clearScript() {
     }
 }
 
-// Global click to hide menu
+// Close menu if you click outside the editor
 document.addEventListener('click', (e) => {
     if (!suggestionMenu.contains(e.target)) hideMenu();
 });
 
-// Print cleanup
+// Final cleanup before printing
 window.onbeforeprint = () => {
     const ps = editor.querySelectorAll('p');
     ps.forEach(p => {
