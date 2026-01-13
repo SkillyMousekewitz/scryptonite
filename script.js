@@ -63,9 +63,14 @@ editor.addEventListener('keydown', function(e) {
         }
     }
 
-    // B. Robust Tab Cycling
+// B. Robust Tab Cycling (FIXED)
     if (e.key === 'Tab') {
         e.preventDefault();
+
+        // KILL MENU: This stops the freeze when tabbing out of a character name
+        if (suggestionMenu.style.display === 'block') {
+            hideMenu();
+        }
 
         let currentClass = getModeFromElement(currentElement);
         let currentIndex = modes.indexOf(currentClass);
@@ -74,18 +79,20 @@ editor.addEventListener('keydown', function(e) {
 
         currentElement.className = modes[currentIndex];
         
-        if (currentElement.innerHTML === "" || currentElement.innerHTML === "<br>") {
+        // RE-FOCUS: Keeps the cursor alive even if the line is empty
+        if (currentElement.innerText.trim() === "") {
             currentElement.innerHTML = "&#xfeff;";
             placeCursorAtEnd(currentElement);
         }
 
         updateHelpSidebar(modes[currentIndex]);
+        return; // Prevents the event from bubbling
     }
 
-    // C. Smart Enter Logic
+// C. Smart Enter Logic (FIXED)
     if (e.key === 'Enter') {
-        // If menu is open but nothing selected, kill it to prevent focus hijacking
-        if (suggestionMenu.style.display === 'block' && selectedIndex === -1) {
+        // CLOSE MENU: Prevents the menu from 'hanging' when you start a new line
+        if (suggestionMenu.style.display === 'block') {
             hideMenu();
         }
 
@@ -97,6 +104,7 @@ editor.addEventListener('keydown', function(e) {
             const prevElement = newElement ? newElement.previousElementSibling : null;
 
             if (prevElement && newElement) {
+                // Auto-format based on the previous line
                 if (prevElement.classList.contains('character')) newElement.className = 'dialogue';
                 else if (prevElement.classList.contains('scene-heading')) newElement.className = 'action';
                 else if (prevElement.classList.contains('parenthetical')) newElement.className = 'dialogue';
@@ -117,19 +125,28 @@ editor.addEventListener('keydown', function(e) {
 function handleAutocomplete() {
     const selection = window.getSelection();
     if (!selection.rangeCount) return;
+    
+    // Find the paragraph the user is currently typing in
     const currentElement = selection.anchorNode.parentElement.closest('p');
 
+    // Only run if we are currently in a 'character' block
     if (currentElement && currentElement.classList.contains('character')) {
+        
+        // REWRITE: We strip the invisible zero-width space (\uFEFF) 
+        // so the search query is clean and doesn't "freeze" the logic.
         const query = currentElement.innerText.replace(/\uFEFF/g, "").trim().toUpperCase();
+        
         const characters = getExistingCharacters();
         const matches = characters.filter(char => char.startsWith(query) && char !== query);
 
+        // Show the menu if there are matches, otherwise hide it
         if (matches.length > 0 && query.length > 0) {
             showSuggestions(matches, currentElement);
         } else {
             hideMenu();
         }
     } else {
+        // Hide menu if we move to a non-character line (like Dialogue or Action)
         hideMenu();
     }
 }
