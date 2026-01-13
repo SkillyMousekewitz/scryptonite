@@ -1,32 +1,44 @@
-/* style.css */
-@import url('https://fonts.googleapis.com/css2?family=Courier+Prime&display=swap');
+// script.js
+const editor = document.getElementById('editor');
+const modes = ['action', 'scene-heading', 'character', 'parenthetical', 'dialogue', 'transition'];
 
-.paper {
-    width: 8.5in;
-    min-height: 11in;
-    padding: 1in 1in 1in 1.5in; /* Standard 1.5" left margin for binding */
-    margin: 0 auto;
-    background: white;
-    font-family: 'Courier Prime', 'Courier New', Courier, monospace;
-    font-size: 12pt;
-    line-height: 1.2;
-    outline: none;
-    white-space: pre-wrap;
-}
+editor.addEventListener('keydown', function(e) {
+    if (e.key === 'Tab') {
+        e.preventDefault();
+        
+        // Get the current line (paragraph)
+        const selection = window.getSelection();
+        const currentElement = selection.anchorNode.parentElement;
+        
+        if (currentElement.id === 'editor') return; // Don't style the container
 
-/* Script Element Formatting */
-#editor p { margin-bottom: 0; min-height: 1em; }
+        // Find current mode index
+        let currentClass = modes.find(cls => currentElement.classList.contains(cls)) || 'action';
+        let currentIndex = modes.indexOf(currentClass);
 
-.scene-heading { text-transform: uppercase; margin-top: 25px !important; font-weight: bold; }
-.action { margin-top: 12px !important; }
-.character { text-transform: uppercase; width: 50%; margin-left: 2in !important; margin-top: 12px !important; }
-.parenthetical { width: 30%; margin-left: 1.5in !important; }
-.dialogue { width: 70%; margin-left: 1in !important; margin-bottom: 12px !important; }
-.transition { text-transform: uppercase; margin-left: 4.5in !important; margin-top: 12px !important; }
+        // Cycle index: Shift+Tab goes backward, Tab goes forward
+        if (e.shiftKey) {
+            currentIndex = (currentIndex - 1 + modes.length) % modes.length;
+        } else {
+            currentIndex = (currentIndex + 1) % modes.length;
+        }
 
-/* Pagination Logic */
-@media print {
-    body { background: none; }
-    .paper { box-shadow: none; margin: 0; }
-    p { break-inside: avoid; } /* Prevents splitting a block across pages */
-}
+        // Apply new class
+        currentElement.className = modes[currentIndex];
+    }
+
+    // Auto-switch: When pressing Enter after Character, automatically go to Dialogue
+    if (e.key === 'Enter') {
+        setTimeout(() => {
+            const selection = window.getSelection();
+            const newElement = selection.anchorNode.parentElement;
+            const prevElement = newElement.previousElementSibling;
+
+            if (prevElement && prevElement.classList.contains('character')) {
+                newElement.className = 'dialogue';
+            } else if (prevElement && prevElement.classList.contains('scene-heading')) {
+                newElement.className = 'action';
+            }
+        }, 0);
+    }
+});
