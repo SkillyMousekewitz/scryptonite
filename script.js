@@ -1,62 +1,58 @@
 const editor = document.getElementById('editor');
+// The order here is the order they will cycle through when you hit TAB
 const modes = ['action', 'scene-heading', 'character', 'parenthetical', 'dialogue', 'transition'];
 
-// 1. Load saved content on startup
-window.addEventListener('DOMContentLoaded', () => {
-    const savedContent = localStorage.getItem('script-draft');
-    if (savedContent) {
-        editor.innerHTML = savedContent;
-    }
-});
-
-// 2. Auto-save whenever the user types
-editor.addEventListener('input', () => {
-    localStorage.setItem('script-draft', editor.innerHTML);
-});
-
-// 3. The Tab-Cycling Logic
 editor.addEventListener('keydown', function(e) {
+    // 1. Specifically catch the Tab key
     if (e.key === 'Tab') {
-        e.preventDefault();
+        e.preventDefault(); // This stops the focus from jumping to the buttons
+
         const selection = window.getSelection();
-        let currentElement = selection.anchorNode.nodeType === 3 
-            ? selection.anchorNode.parentElement 
-            : selection.anchorNode;
+        if (!selection.rangeCount) return;
 
-        if (currentElement.id === 'editor') return;
+        // 2. Find the paragraph element the cursor is inside
+        let currentElement = selection.anchorNode.parentElement.closest('p');
+        
+        // If they are on a line that isn't a <p> (like the start of the editor), wrap it
+        if (!currentElement || currentElement.id === 'editor') {
+            document.execCommand('formatBlock', false, 'p');
+            currentElement = selection.anchorNode.parentElement.closest('p');
+        }
 
+        // 3. Determine the next style in the cycle
         let currentClass = modes.find(cls => currentElement.classList.contains(cls)) || 'action';
         let currentIndex = modes.indexOf(currentClass);
 
         if (e.shiftKey) {
+            // Cycle backward
             currentIndex = (currentIndex - 1 + modes.length) % modes.length;
         } else {
+            // Cycle forward
             currentIndex = (currentIndex + 1) % modes.length;
         }
 
-        currentElement.className = modes[currentIndex];
+        // 4. Apply the new class and remove old ones
+        currentElement.className = ''; // Clear existing
+        currentElement.classList.add(modes[currentIndex]);
     }
-
-    // Smart Enter: Follow Character with Dialogue
+    
+    // Auto-formatting for Enter Key
     if (e.key === 'Enter') {
+        // We use a tiny timeout to let the browser create the new line first
         setTimeout(() => {
             const selection = window.getSelection();
-            const newElement = selection.anchorNode.parentElement;
+            const newElement = selection.anchorNode.parentElement.closest('p');
             const prevElement = newElement.previousElementSibling;
 
-            if (prevElement && prevElement.classList.contains('character')) {
-                newElement.className = 'dialogue';
+            if (prevElement) {
+                if (prevElement.classList.contains('character')) {
+                    newElement.className = 'dialogue';
+                } else if (prevElement.classList.contains('scene-heading')) {
+                    newElement.className = 'action';
+                } else if (prevElement.classList.contains('parenthetical')) {
+                    newElement.className = 'dialogue';
+                }
             }
-        }, 0);
+        }, 10);
     }
 });
-
-// 4. Export Function
-function downloadScript() {
-    const content = editor.innerHTML;
-    const blob = new Blob([content], { type: 'text/html' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'my-script.html';
-    a.click();
-}
