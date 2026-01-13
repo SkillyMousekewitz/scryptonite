@@ -137,6 +137,8 @@ function handleAutocomplete() {
 function showSuggestions(matches, targetEl) {
     suggestionMenu.innerHTML = '';
     const rect = targetEl.getBoundingClientRect();
+    
+    // Position the menu
     suggestionMenu.style.top = `${rect.bottom + window.scrollY}px`;
     suggestionMenu.style.left = `${rect.left + window.scrollX}px`;
     suggestionMenu.style.display = 'block';
@@ -146,7 +148,10 @@ function showSuggestions(matches, targetEl) {
         const item = document.createElement('button');
         item.classList.add('list-group-item', 'list-group-item-action', 'py-1');
         item.innerText = name;
-        item.onclick = () => {
+        
+        // Use mousedown instead of click to prevent focus issues
+        item.onmousedown = (e) => {
+            e.preventDefault(); // Prevents the editor from losing focus
             targetEl.innerText = name;
             hideMenu();
             placeCursorAtEnd(targetEl);
@@ -178,6 +183,7 @@ function updateActiveSuggestion(items) {
 
 function hideMenu() {
     suggestionMenu.style.display = 'none';
+    suggestionMenu.innerHTML = ''; // Clear items to prevent "ghost" selections
     selectedIndex = -1;
 }
 
