@@ -6,6 +6,7 @@
 </head>
 <body class="bg-light">
     <div class="container my-5">
+        <div id="character-suggestions" class="list-group position-absolute shadow-sm" style="display: none; z-index: 1000; min-width: 200px;"></div>
         <div class="container mt-3 no-print">
     <div class="d-flex justify-content-end gap-2">
         <button class="btn btn-outline-danger btn-sm" onclick="if(confirm('Clear all?')) { editor.innerHTML = ''; localStorage.removeItem('script-draft'); }">Clear Script</button>
