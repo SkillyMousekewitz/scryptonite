@@ -1,15 +1,43 @@
 /* style.css */
 @import url('https://fonts.googleapis.com/css2?family=Courier+Prime&display=swap');
 
-/* --- 1. SCREEN DISPLAY STYLES --- */
+/* --- 1. GENERAL LAYOUT & SIDEBAR --- */
 body {
     background-color: #f8f9fa;
 }
 
+/* Ensure the paper remains centered in its column */
+.col-md-10 {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Sidebar Styling */
+.card-header h6 {
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.list-group-item {
+    border: none;
+    padding: 5px 10px;
+    transition: all 0.2s ease;
+}
+
+/* Highlight the help box item to match the current mode */
+.list-group-item.highlight-mode {
+    background-color: #e9ecef;
+    font-weight: bold;
+    border-left: 4px solid #0d6efd;
+}
+
+/* --- 2. THE EDITOR PAGE (PAPER) --- */
 .paper {
     width: 8.5in;
     min-height: 11in;
-    padding: 1in 1in 1in 1.5in; /* 1.5" left margin for binding hole-punches */
+    padding: 1in 1in 1in 1.5in; /* Standard 1.5" left margin for binding */
     margin: 2in auto;
     background: white;
     font-family: 'Courier Prime', 'Courier New', Courier, monospace;
@@ -21,20 +49,41 @@ body {
     position: relative;
 }
 
-/* Script Element Formatting */
+/* Base Paragraph Styling */
 #editor p { 
     margin-bottom: 0; 
-    min-height: 1em; 
+    min-height: 1.2em; /* Ensures empty lines are visible */
+    position: relative;
 }
 
+/* --- 3. SCRIPT ELEMENT FORMATTING --- */
 .scene-heading { text-transform: uppercase; margin-top: 25px !important; font-weight: bold; }
-.action { margin-top: 12px !important; }
-.character { text-transform: uppercase; width: 50%; margin-left: 2in !important; margin-top: 12px !important; }
+.action        { margin-top: 12px !important; }
+.character     { text-transform: uppercase; width: 50%; margin-left: 2in !important; margin-top: 12px !important; }
 .parenthetical { width: 30%; margin-left: 1.5in !important; }
-.dialogue { width: 70%; margin-left: 1in !important; margin-bottom: 12px !important; }
-.transition { text-transform: uppercase; margin-left: 4.5in !important; margin-top: 12px !important; }
+.dialogue      { width: 70%; margin-left: 1in !important; margin-bottom: 12px !important; }
+.transition    { text-transform: uppercase; margin-left: 4.5in !important; margin-top: 12px !important; }
 
-/* Autocomplete UI Styles */
+/* --- 4. EDITOR UTILITIES (Autocomplete & Visual Aids) --- */
+
+/* Visual indicator for current mode on empty lines */
+#editor p:empty::before {
+    content: attr(class);
+    position: absolute;
+    right: 0;
+    color: #ced4da;
+    font-size: 10pt;
+    text-transform: uppercase;
+    pointer-events: none;
+}
+
+/* Default label if no class is present */
+#editor p:not([class]):empty::before,
+#editor p.action:empty::before {
+    content: "Action";
+}
+
+/* Autocomplete Suggestion Box */
 #character-suggestions {
     max-height: 200px;
     overflow-y: auto;
@@ -49,15 +98,17 @@ body {
     color: white !important;
 }
 
-/* --- 2. PRINT & PDF STYLES --- */
+/* --- 5. PRINT & PDF STYLES --- */
 @media print {
     @page {
         size: letter;
-        margin: 0; /* Margins are handled by .paper padding */
+        margin: 0; /* Handled by .paper padding */
     }
 
-    /* Hide non-essential UI */
-    .no-print, #character-suggestions { 
+    /* Hide UI elements */
+    .no-print, 
+    #character-suggestions,
+    #editor p:empty::before { 
         display: none !important; 
     }
 
@@ -75,25 +126,23 @@ body {
         padding: 1in 1in 1in 1.5in !important;
     }
 
-    /* PAGE BREAK LOGIC */
+    /* Industry Standard Page Breaking */
     p {
-        break-inside: avoid; /* Keeps dialogue blocks together */
+        break-inside: avoid;
         orphans: 3; 
         widows: 3;  
     }
 
-    .scene-heading {
-        break-after: avoid; /* Prevents heading from being the last line on a page */
-    }
-
+    .scene-heading,
     .character {
-        break-after: avoid; /* Keeps character name glued to the dialogue below */
+        break-after: avoid; /* Prevents names/headings from being isolated at bottom of page */
     }
 
-    /* Page Numbering */
+    /* Automatic Page Numbering */
     body {
         counter-reset: page;
     }
+    
     .paper::after {
         counter-increment: page;
         content: counter(page) ".";
@@ -104,24 +153,3 @@ body {
         font-size: 12pt;
     }
 }
-/* Ensure the paper remains centered in its column */
-.col-md-10 {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-/* Make the sidebar look distinct */
-.card-header h6 {
-    font-size: 0.9rem;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-}
-
-.list-group-item {
-    border: none;
-    padding: 5px 10px;
-}
-
-/* Highlight the active mode visually in the help box? 
-   (Optional: We can add JS later to highlight the current line's mode) */
