@@ -1,72 +1,32 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+/* style.css */
+@import url('https://fonts.googleapis.com/css2?family=Courier+Prime&display=swap');
 
-const firebaseConfig = {
-    apiKey: "AIzaSyCMJ8mkBdyhLDbC6RmaVK9zWl-XSms6RoA",
-    authDomain: "scryptonite-6a340.firebaseapp.com",
-    projectId: "scryptonite-6a340",
-    storageBucket: "scryptonite-6a340.firebasestorage.app",
-    messagingSenderId: "875468928578",
-    appId: "1:875468928578:web:524ae574d4c84593a49fdb"
-};
+.paper {
+    width: 8.5in;
+    min-height: 11in;
+    padding: 1in 1in 1in 1.5in; /* Standard 1.5" left margin for binding */
+    margin: 0 auto;
+    background: white;
+    font-family: 'Courier Prime', 'Courier New', Courier, monospace;
+    font-size: 12pt;
+    line-height: 1.2;
+    outline: none;
+    white-space: pre-wrap;
+}
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
-const editor = document.getElementById('main-editor');
-let currentUser = null;
+/* Script Element Formatting */
+#editor p { margin-bottom: 0; min-height: 1em; }
 
-// Initialization
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        currentUser = user;
-        document.getElementById('auth-overlay').style.display = 'none';
-        onSnapshot(doc(db, "scripts", user.uid), (snap) => {
-            if (snap.exists() && !editor.contains(document.activeElement)) {
-                editor.innerHTML = snap.data().content || editor.innerHTML;
-            }
-        });
-    } else {
-        document.getElementById('auth-overlay').style.display = 'flex';
-    }
-});
+.scene-heading { text-transform: uppercase; margin-top: 25px !important; font-weight: bold; }
+.action { margin-top: 12px !important; }
+.character { text-transform: uppercase; width: 50%; margin-left: 2in !important; margin-top: 12px !important; }
+.parenthetical { width: 30%; margin-left: 1.5in !important; }
+.dialogue { width: 70%; margin-left: 1in !important; margin-bottom: 12px !important; }
+.transition { text-transform: uppercase; margin-left: 4.5in !important; margin-top: 12px !important; }
 
-// Basic Functions
-const save = async () => {
-    if (currentUser) {
-        await setDoc(doc(db, "scripts", currentUser.uid), { content: editor.innerHTML }, { merge: true });
-    }
-};
-
-document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
-document.getElementById('logout-btn').onclick = () => signOut(auth);
-document.getElementById('help-btn').onclick = () => {
-    const leg = document.getElementById('legend-overlay');
-    leg.style.display = (leg.style.display === 'flex') ? 'none' : 'flex';
-};
-document.getElementById('legend-overlay').onclick = () => document.getElementById('legend-overlay').style.display = 'none';
-document.getElementById('pdf-btn').onclick = () => html2pdf().from(editor).save();
-
-// Typing Engine
-document.addEventListener('keydown', (e) => {
-    const sel = window.getSelection();
-    const line = sel.anchorNode?.parentElement?.closest('.line');
-    if (!line || e.key !== 'Enter') return;
-
-    e.preventDefault();
-    const newLine = document.createElement('div');
-    newLine.className = 'line action';
-    newLine.innerHTML = '&#8203;';
-    line.after(newLine);
-    
-    const range = document.createRange();
-    range.setStart(newLine.firstChild, 0);
-    range.collapse(true);
-    sel.removeAllRanges();
-    sel.addRange(range);
-    save();
-});
-
-editor.addEventListener('input', save);
+/* Pagination Logic */
+@media print {
+    body { background: none; }
+    .paper { box-shadow: none; margin: 0; }
+    p { break-inside: avoid; } /* Prevents splitting a block across pages */
+}
