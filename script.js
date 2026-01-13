@@ -1,5 +1,5 @@
 /**
- * script.js - Integrated Scriptwriting Engine
+ * script.js - Final Integrated Scriptwriting Engine
  */
 
 // --- 1. CONFIGURATION & STATE ---
@@ -13,14 +13,18 @@ window.addEventListener('DOMContentLoaded', () => {
     const savedContent = localStorage.getItem('script-draft');
     if (savedContent && savedContent.trim() !== "") {
         editor.innerHTML = savedContent;
-        // Sync sidebar to the first paragraph's mode
         const firstPara = editor.querySelector('p');
         if (firstPara) updateHelpSidebar(getModeFromElement(firstPara));
     } else {
-        // Start fresh with a Scene Heading
         editor.innerHTML = '<p class="scene-heading">&#xfeff;</p>';
         updateHelpSidebar('scene-heading');
     }
+});
+
+// Auto-save whenever the user types
+editor.addEventListener('input', () => {
+    localStorage.setItem('script-draft', editor.innerHTML);
+    handleAutocomplete();
 });
 
 // --- 3. CORE KEYBOARD ENGINE (Tab, Enter, Arrows) ---
@@ -30,7 +34,6 @@ editor.addEventListener('keydown', function(e) {
 
     let currentElement = selection.anchorNode.parentElement.closest('p');
     
-    // Safety check: ensure we are inside a paragraph
     if (!currentElement || currentElement.id === 'editor') {
         document.execCommand('formatBlock', false, 'p');
         currentElement = selection.anchorNode.parentElement.closest('p');
@@ -51,7 +54,8 @@ editor.addEventListener('keydown', function(e) {
             return;
         } else if (e.key === 'Enter' && selectedIndex > -1) {
             e.preventDefault();
-            items[selectedIndex].click();
+            // Manually trigger the mousedown logic for the selected item
+            items[selectedIndex].dispatchEvent(new Event('mousedown'));
             return;
         } else if (e.key === 'Escape') {
             hideMenu();
@@ -66,12 +70,10 @@ editor.addEventListener('keydown', function(e) {
         let currentClass = getModeFromElement(currentElement);
         let currentIndex = modes.indexOf(currentClass);
 
-        // Cycle forward (Tab) or backward (Shift+Tab)
         currentIndex = e.shiftKey ? (currentIndex - 1 + modes.length) % modes.length : (currentIndex + 1) % modes.length;
 
         currentElement.className = modes[currentIndex];
         
-        // Handle empty lines so they remain focusable
         if (currentElement.innerHTML === "" || currentElement.innerHTML === "<br>") {
             currentElement.innerHTML = "&#xfeff;";
             placeCursorAtEnd(currentElement);
@@ -80,9 +82,9 @@ editor.addEventListener('keydown', function(e) {
         updateHelpSidebar(modes[currentIndex]);
     }
 
-// C. Smart Enter Logic (Updated for stability)
+    // C. Smart Enter Logic
     if (e.key === 'Enter') {
-        // If the menu is open but nothing is selected, just close it and proceed
+        // If menu is open but nothing selected, kill it to prevent focus hijacking
         if (suggestionMenu.style.display === 'block' && selectedIndex === -1) {
             hideMenu();
         }
@@ -90,25 +92,16 @@ editor.addEventListener('keydown', function(e) {
         setTimeout(() => {
             const newSelection = window.getSelection();
             if (!newSelection.rangeCount) return;
-            
+
             const newElement = newSelection.anchorNode.parentElement.closest('p');
             const prevElement = newElement ? newElement.previousElementSibling : null;
 
             if (prevElement && newElement) {
-                // Logic: Character -> Dialogue
-                if (prevElement.classList.contains('character')) {
-                    newElement.className = 'dialogue';
-                } 
-                // Logic: Parenthetical -> Dialogue
-                else if (prevElement.classList.contains('parenthetical')) {
-                    newElement.className = 'dialogue';
-                }
-                // Logic: Scene Heading -> Action
-                else if (prevElement.classList.contains('scene-heading')) {
-                    newElement.className = 'action';
-                }
+                if (prevElement.classList.contains('character')) newElement.className = 'dialogue';
+                else if (prevElement.classList.contains('scene-heading')) newElement.className = 'action';
+                else if (prevElement.classList.contains('parenthetical')) newElement.className = 'dialogue';
+                else newElement.className = 'action';
 
-                // Ensure the line is focusable
                 if (newElement.innerHTML === "" || newElement.innerHTML === "<br>") {
                     newElement.innerHTML = "&#xfeff;";
                     placeCursorAtEnd(newElement);
@@ -116,22 +109,18 @@ editor.addEventListener('keydown', function(e) {
                 
                 updateHelpSidebar(newElement.className);
             }
-        }, 20); // Increased timeout slightly for browser stability
+        }, 20); 
     }
-
-// --- 4. AUTOCOMPLETE & INPUT LOGIC ---
-editor.addEventListener('input', () => {
-    localStorage.setItem('script-draft', editor.innerHTML);
-    handleAutocomplete();
 });
 
+// --- 4. AUTOCOMPLETE ENGINE ---
 function handleAutocomplete() {
     const selection = window.getSelection();
     if (!selection.rangeCount) return;
     const currentElement = selection.anchorNode.parentElement.closest('p');
 
     if (currentElement && currentElement.classList.contains('character')) {
-        const query = currentElement.innerText.trim().toUpperCase();
+        const query = currentElement.innerText.replace(/\uFEFF/g, "").trim().toUpperCase();
         const characters = getExistingCharacters();
         const matches = characters.filter(char => char.startsWith(query) && char !== query);
 
@@ -148,8 +137,6 @@ function handleAutocomplete() {
 function showSuggestions(matches, targetEl) {
     suggestionMenu.innerHTML = '';
     const rect = targetEl.getBoundingClientRect();
-    
-    // Position the menu
     suggestionMenu.style.top = `${rect.bottom + window.scrollY}px`;
     suggestionMenu.style.left = `${rect.left + window.scrollX}px`;
     suggestionMenu.style.display = 'block';
@@ -159,10 +146,9 @@ function showSuggestions(matches, targetEl) {
         const item = document.createElement('button');
         item.classList.add('list-group-item', 'list-group-item-action', 'py-1');
         item.innerText = name;
-        
-        // Use mousedown instead of click to prevent focus issues
+        // Use mousedown to prevent editor focus loss
         item.onmousedown = (e) => {
-            e.preventDefault(); // Prevents the editor from losing focus
+            e.preventDefault(); 
             targetEl.innerText = name;
             hideMenu();
             placeCursorAtEnd(targetEl);
@@ -171,11 +157,10 @@ function showSuggestions(matches, targetEl) {
     });
 }
 
-// --- 5. SIDEBAR & UI HELPERS ---
+// --- 5. UI HELPERS ---
 function updateHelpSidebar(activeMode) {
     const listItems = document.querySelectorAll('.list-group-item');
     listItems.forEach(item => {
-        // Normalizes "scene-heading" to "scene heading" for matching
         const normalizedMode = activeMode.replace('-', ' ');
         if (item.innerText.toLowerCase().includes(normalizedMode)) {
             item.classList.add('highlight-mode');
@@ -194,7 +179,7 @@ function updateActiveSuggestion(items) {
 
 function hideMenu() {
     suggestionMenu.style.display = 'none';
-    suggestionMenu.innerHTML = ''; // Clear items to prevent "ghost" selections
+    suggestionMenu.innerHTML = ''; 
     selectedIndex = -1;
 }
 
@@ -202,7 +187,7 @@ function getModeFromElement(el) {
     return modes.find(cls => el.classList.contains(cls)) || 'action';
 }
 
-// --- 6. UTILITIES & EXPORTS ---
+// --- 6. UTILITIES ---
 function getExistingCharacters() {
     const names = new Set();
     document.querySelectorAll('.character').forEach(el => {
@@ -216,7 +201,8 @@ function placeCursorAtEnd(el) {
     const range = document.createRange();
     const sel = window.getSelection();
     if (el.childNodes.length > 0) {
-        range.setStart(el.childNodes[0], el.childNodes[0].length || 0);
+        let node = el.childNodes[el.childNodes.length - 1];
+        range.setStart(node, node.length || 0);
     } else {
         range.selectNodeContents(el);
     }
@@ -241,12 +227,12 @@ function clearScript() {
     }
 }
 
-// Hide autocomplete when clicking away
+// Global click to hide menu
 document.addEventListener('click', (e) => {
     if (!suggestionMenu.contains(e.target)) hideMenu();
 });
 
-// Print Cleanup
+// Print cleanup
 window.onbeforeprint = () => {
     const ps = editor.querySelectorAll('p');
     ps.forEach(p => {
