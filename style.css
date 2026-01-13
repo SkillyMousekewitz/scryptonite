@@ -1,38 +1,30 @@
 @import url('https://fonts.googleapis.com/css2?family=Courier+Prime&display=swap');
 
-body { background-color: #f8f9fa; }
-
+body { background: #f0f2f5; }
 .paper {
     width: 8.5in; min-height: 11in; padding: 1in 1in 1in 1.5in;
-    margin: 0 auto 2in auto; background: white;
+    margin: 0 auto 2in; background: white;
     font-family: 'Courier Prime', monospace; font-size: 12pt;
     line-height: 1.2; outline: none; white-space: pre-wrap;
-    position: relative; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.1);
 }
 
-/* Base Paragraph - Critical for cursor stability */
-#editor p { margin-bottom: 0; min-height: 1.2em; position: relative; }
+#editor p { margin: 0; min-height: 1.2em; position: relative; outline: none; }
 
-/* Script Elements */
+/* Screenplay Elements */
 .scene-heading { text-transform: uppercase; margin-top: 25px !important; font-weight: bold; }
 .action        { margin-top: 12px !important; }
-.character     { text-transform: uppercase; width: 50%; margin-left: 2in !important; margin-top: 12px !important; }
-.parenthetical { width: 30%; margin-left: 1.5in !important; }
-.dialogue      { width: 70%; margin-left: 1in !important; margin-bottom: 12px !important; }
+.character     { text-transform: uppercase; margin-left: 2in !important; width: 4in; margin-top: 12px !important; }
+.parenthetical { margin-left: 1.5in !important; width: 2.5in; }
+.dialogue      { margin-left: 1in !important; width: 3.5in; margin-bottom: 12px !important; }
 .transition    { text-transform: uppercase; margin-left: 4.5in !important; margin-top: 12px !important; }
 
-/* Sidebar Highlight */
-.list-group-item.highlight-mode { background-color: #e9ecef; font-weight: bold; border-left: 4px solid #0d6efd; color: #0d6efd; }
+/* Sidebar & Menu */
+.list-group-item.active-mode { background: #0d6efd; color: white; font-weight: bold; }
+#suggestions { background: white; border: 1px solid #ccc; font-family: sans-serif; }
 
-/* Autocomplete Menu */
-#character-suggestions { max-height: 200px; overflow-y: auto; background: white; border: 1px solid #dee2e6; font-family: sans-serif; }
-.list-group-item-action:focus { background-color: #0d6efd; color: white; }
-
-/* PDF Output */
 @media print {
-    .no-print, #character-suggestions { display: none !important; }
-    body { background-color: white !important; }
-    .paper { width: 100% !important; box-shadow: none !important; margin: 0 !important; padding: 1in 1in 1in 1.5in !important; }
+    .no-print, #suggestions { display: none !important; }
+    .paper { box-shadow: none; margin: 0; width: 100%; padding: 1in 1in 1in 1.5in !important; }
     p { break-inside: avoid; }
-    .scene-heading, .character { break-after: avoid; }
 }
