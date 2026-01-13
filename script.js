@@ -1,111 +1,127 @@
 const editor = document.getElementById('editor');
-const suggestionMenu = document.getElementById('character-suggestions');
+const menu = document.getElementById('suggestions');
 const modes = ['action', 'scene-heading', 'character', 'parenthetical', 'dialogue', 'transition'];
-let selectedIndex = -1;
 
-// --- Initialize ---
-window.addEventListener('DOMContentLoaded', () => {
-    const saved = localStorage.getItem('script-draft');
+// 1. Setup on Load
+window.onload = () => {
+    const saved = localStorage.getItem('script-work');
     if (saved) editor.innerHTML = saved;
-    updateSidebar(modes.find(m => editor.querySelector('p').classList.contains(m)) || 'action');
-});
+    updateSidebar();
+};
 
-editor.addEventListener('input', () => {
-    localStorage.setItem('script-draft', editor.innerHTML);
-    handleAutocomplete();
-});
-
-// --- Keyboard Logic ---
+// 2. The Main Keyboard Handler
 editor.addEventListener('keydown', function(e) {
-    const selection = window.getSelection();
-    let currentLine = selection.anchorNode.parentElement.closest('p');
+    // If the character menu is open, and we hit escape, close it.
+    if (e.key === 'Escape') hideMenu();
 
-    // 1. Force Menu Close on Tab/Enter to prevent freezing
-    if (e.key === 'Tab' || e.key === 'Enter') {
-        suggestionMenu.style.display = 'none';
-    }
-
-    // 2. Tab Cycling
     if (e.key === 'Tab') {
-        e.preventDefault();
-        if (!currentLine) return;
-
-        let currentClass = modes.find(m => currentLine.classList.contains(m)) || 'action';
-        let nextIndex = e.shiftKey ? (modes.indexOf(currentClass) - 1 + modes.length) % modes.length : (modes.indexOf(currentClass) + 1) % modes.length;
-
-        currentLine.className = modes[nextIndex];
-        updateSidebar(modes[nextIndex]);
+        e.preventDefault(); // Stop browser from jumping to buttons
+        hideMenu();         // Nuke the autocomplete menu so it doesn't freeze focus
         
-        if (currentLine.innerText.trim() === "") {
-            currentLine.innerHTML = "&#xfeff;";
-            placeCursorEnd(currentLine);
-        }
+        let sel = window.getSelection();
+        let curr = sel.anchorNode.parentElement.closest('p');
+        if (!curr) return;
+
+        // Cycle Logic
+        let currClass = modes.find(m => curr.classList.contains(m)) || 'action';
+        let idx = modes.indexOf(currClass);
+        let next = e.shiftKey ? (idx - 1 + modes.length) % modes.length : (idx + 1) % modes.length;
+
+        curr.className = modes[next];
+        
+        // Refresh focus to prevent "Freezing"
+        editor.focus();
+        updateSidebar();
     }
 
-    // 3. Smart Enter
     if (e.key === 'Enter') {
+        hideMenu();
         setTimeout(() => {
-            const newLine = window.getSelection().anchorNode.parentElement.closest('p');
-            const prevLine = newLine.previousElementSibling;
-            if (prevLine && newLine) {
-                if (prevLine.classList.contains('character')) newLine.className = 'dialogue';
-                else if (prevLine.classList.contains('scene-heading')) newLine.className = 'action';
-                else if (prevLine.classList.contains('parenthetical')) newLine.className = 'dialogue';
-                else newLine.className = 'action';
-                
-                if (newLine.innerText.trim() === "") newLine.innerHTML = "&#xfeff;";
-                placeCursorEnd(newLine);
-                updateSidebar(newLine.className);
+            let curr = window.getSelection().anchorNode.parentElement.closest('p');
+            let prev = curr.previousElementSibling;
+            if (prev && curr) {
+                if (prev.classList.contains('character')) curr.className = 'dialogue';
+                else if (prev.classList.contains('scene-heading')) curr.className = 'action';
+                else if (prev.classList.contains('parenthetical')) curr.className = 'dialogue';
+                else curr.className = 'action';
+                updateSidebar();
             }
-        }, 20);
+        }, 10);
     }
 });
 
-// --- Helpers ---
-function handleAutocomplete() {
-    const selection = window.getSelection();
-    const line = selection.anchorNode.parentElement.closest('p');
-    if (line && line.classList.contains('character')) {
-        const query = line.innerText.replace(/\uFEFF/g, "").trim().toUpperCase();
-        const names = Array.from(new Set(Array.from(document.querySelectorAll('.character')).map(el => el.innerText.trim().toUpperCase()))).filter(n => n.startsWith(query) && n !== query);
-        if (names.length > 0 && query.length > 0) showMenu(names, line); else hideMenu();
-    } else hideMenu();
-}
+// 3. Autocomplete Engine
+editor.addEventListener('input', () => {
+    localStorage.setItem('script-work', editor.innerHTML);
+    let sel = window.getSelection();
+    let curr = sel.anchorNode.parentElement.closest('p');
+    
+    if (curr && curr.classList.contains('character')) {
+        let name = curr.innerText.replace(/\uFEFF/g, "").trim().toUpperCase();
+        let allNames = Array.from(new Set(Array.from(document.querySelectorAll('.character')).map(el => el.innerText.trim().toUpperCase())));
+        let matches = allNames.filter(n => n.startsWith(name) && n !== name);
+        
+        if (matches.length > 0 && name.length > 0) {
+            showMenu(matches, curr);
+        } else {
+            hideMenu();
+        }
+    } else {
+        hideMenu();
+    }
+});
 
-function showMenu(names, el) {
-    suggestionMenu.innerHTML = '';
-    const rect = el.getBoundingClientRect();
-    suggestionMenu.style.cssText = `display:block; top:${rect.bottom + window.scrollY}px; left:${rect.left + window.scrollX}px;`;
-    names.forEach(n => {
-        const btn = document.createElement('button');
-        btn.className = 'list-group-item list-group-item-action py-1';
-        btn.innerText = n;
-        btn.onmousedown = (e) => { e.preventDefault(); el.innerText = n; hideMenu(); placeCursorEnd(el); };
-        suggestionMenu.appendChild(btn);
+function showMenu(list, el) {
+    menu.innerHTML = '';
+    let rect = el.getBoundingClientRect();
+    menu.style.display = 'block';
+    menu.style.top = (rect.bottom + window.scrollY) + 'px';
+    menu.style.left = (rect.left + window.scrollX) + 'px';
+
+    list.forEach(m => {
+        let b = document.createElement('button');
+        b.className = 'list-group-item list-group-item-action py-1';
+        b.innerText = m;
+        // Mousedown is the key—it fires BEFORE the editor loses focus
+        b.onmousedown = (e) => {
+            e.preventDefault();
+            el.innerText = m;
+            hideMenu();
+            editor.focus();
+            // Move cursor to end
+            let range = document.createRange();
+            let sel = window.getSelection();
+            range.selectNodeContents(el);
+            range.collapse(false);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        };
+        menu.appendChild(b);
     });
 }
 
-function hideMenu() { suggestionMenu.style.display = 'none'; }
+function hideMenu() { menu.style.display = 'none'; }
 
-function updateSidebar(mode) {
+function updateSidebar() {
+    let curr = window.getSelection().anchorNode ? window.getSelection().anchorNode.parentElement.closest('p') : null;
+    let mode = curr ? (modes.find(m => curr.classList.contains(m)) || 'action') : 'action';
+    
     document.querySelectorAll('#help-list li').forEach(li => {
-        li.classList.toggle('highlight-mode', li.innerText.toLowerCase().includes(mode.replace('-', ' ')));
+        li.classList.toggle('active-mode', li.innerText.toLowerCase().includes(mode.replace('-', ' ')));
     });
 }
 
-function placeCursorEnd(el) {
-    const range = document.createRange();
-    const sel = window.getSelection();
-    range.selectNodeContents(el);
-    range.collapse(false);
-    sel.removeAllRanges();
-    sel.addRange(range);
-}
-
+// 4. Global Actions
 function downloadScript() {
-    const a = document.createElement('a');
+    let a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([editor.innerHTML], {type:'text/html'}));
-    a.download = 'script.html'; a.click();
+    a.download = 'myscript.html'; a.click();
 }
 
-function clearScript() { if(confirm("Clear?")) { editor.innerHTML='<p class="scene-heading">&#xfeff;</p>'; localStorage.clear(); } }
+function clearScript() {
+    if(confirm("Delete everything?")) {
+        editor.innerHTML = '<p class="scene-heading">&#xfeff;</p>';
+        localStorage.clear();
+        updateSidebar();
+    }
+}
