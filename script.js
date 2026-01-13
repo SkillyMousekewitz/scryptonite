@@ -210,3 +210,10 @@ window.onbeforeprint = () => {
         }
     });
 };
+
+function clearScript() {
+    if (confirm("Are you sure you want to clear the entire script? This cannot be undone.")) {
+        editor.innerHTML = '<p class="scene-heading">&#xfeff;</p>';
+        localStorage.removeItem('script-draft');
+    }
+}
