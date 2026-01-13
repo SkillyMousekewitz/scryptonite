@@ -80,23 +80,35 @@ editor.addEventListener('keydown', function(e) {
         updateHelpSidebar(modes[currentIndex]);
     }
 
-    // C. Smart Enter Logic
+// C. Smart Enter Logic (Updated for stability)
     if (e.key === 'Enter') {
-        hideMenu();
+        // If the menu is open but nothing is selected, just close it and proceed
+        if (suggestionMenu.style.display === 'block' && selectedIndex === -1) {
+            hideMenu();
+        }
 
         setTimeout(() => {
             const newSelection = window.getSelection();
+            if (!newSelection.rangeCount) return;
+            
             const newElement = newSelection.anchorNode.parentElement.closest('p');
-            const prevElement = newElement.previousElementSibling;
+            const prevElement = newElement ? newElement.previousElementSibling : null;
 
             if (prevElement && newElement) {
-                // Formatting rules based on previous line
-                if (prevElement.classList.contains('character')) newElement.className = 'dialogue';
-                else if (prevElement.classList.contains('scene-heading')) newElement.className = 'action';
-                else if (prevElement.classList.contains('parenthetical')) newElement.className = 'dialogue';
-                else newElement.className = 'action';
+                // Logic: Character -> Dialogue
+                if (prevElement.classList.contains('character')) {
+                    newElement.className = 'dialogue';
+                } 
+                // Logic: Parenthetical -> Dialogue
+                else if (prevElement.classList.contains('parenthetical')) {
+                    newElement.className = 'dialogue';
+                }
+                // Logic: Scene Heading -> Action
+                else if (prevElement.classList.contains('scene-heading')) {
+                    newElement.className = 'action';
+                }
 
-                // Keep line alive if empty
+                // Ensure the line is focusable
                 if (newElement.innerHTML === "" || newElement.innerHTML === "<br>") {
                     newElement.innerHTML = "&#xfeff;";
                     placeCursorAtEnd(newElement);
@@ -104,9 +116,8 @@ editor.addEventListener('keydown', function(e) {
                 
                 updateHelpSidebar(newElement.className);
             }
-        }, 10);
+        }, 20); // Increased timeout slightly for browser stability
     }
-});
 
 // --- 4. AUTOCOMPLETE & INPUT LOGIC ---
 editor.addEventListener('input', () => {
