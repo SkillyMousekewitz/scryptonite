@@ -1,52 +1,10 @@
-:root {
-    --sidebar-width: 280px;
-    --right-width: 300px;
-    --bg-sidebar: #1a1c1e;
-    --accent: #00cec9;
-    --desk-color: #2d3436;
-}
+/* Elements inside the paper */
+.line.action { margin-top: 12px; }
+.line.character { margin-left: 2in; width: 4in; text-transform: uppercase; margin-top: 12px; }
+.line.dialogue { margin-left: 1in; width: 3.5in; }
+.line.parenthetical { margin-left: 1.5in; width: 2.5in; }
+.line.transition { text-transform: uppercase; margin-left: 4.5in; margin-top: 12px; }
 
-body { margin: 0; display: flex; flex-direction: row; height: 100vh; width: 100vw; background: var(--desk-color); overflow: hidden; transition: 0.3s; }
-
-#left-sidebar, #right-sidebar { background: var(--bg-sidebar); color: #b2bec3; display: flex; flex-direction: column; padding: 20px; z-index: 100; flex-shrink: 0; transition: margin 0.3s ease; }
-#left-sidebar { width: var(--sidebar-width); border-right: 1px solid #111; }
-#right-sidebar { width: var(--right-width); border-left: 1px solid #111; }
-
-body.focus-mode #left-sidebar { margin-left: calc(var(--sidebar-width) * -1); }
-body.focus-mode #right-sidebar { margin-right: calc(var(--right-width) * -1); }
-
-#main-editor { flex-grow: 1; overflow-y: auto; background: var(--desk-color); padding: 40px 0; display: flex; flex-direction: column; align-items: center; }
-
-/* THE PAPER */
-.paper-page { 
-    display: block !important; background-color: white !important; width: 8.5in !important; height: 11in !important; min-height: 11in !important;
-    padding: 1in 1in 1in 1.5in !important; margin-bottom: 30px !important; box-shadow: 0 0 40px rgba(0,0,0,0.6) !important;
-    font-family: 'Courier Prime', Courier, monospace !important; font-size: 12pt !important; line-height: 1.2 !important; color: black !important;
-    outline: none !important; box-sizing: border-box !important; overflow: hidden !important; position: relative !important;
-}
-
-/* SCREENPLAY ELEMENTS */
-.line { min-height: 1.2em; width: 100%; margin: 0; outline: none; white-space: pre-wrap; }
-.scene-heading { text-transform: uppercase; font-weight: bold; margin-top: 25px; }
-.action { margin-top: 12px; }
-.character { margin-left: 2in; width: 4in; text-transform: uppercase; margin-top: 12px; }
-.parenthetical { margin-left: 1.5in; width: 2.5in; }
-.dialogue { margin-left: 1in; width: 3.5in; margin-bottom: 4px; }
-.transition { text-transform: uppercase; margin-left: 4.5in; margin-top: 12px; }
-
-.dialogue-group { display: block; width: 100%; margin-top: 12px; page-break-inside: avoid; }
-
-/* OVERLAYS */
-#auth-overlay, #legend-overlay { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; }
-#auth-overlay { background: #f4f7f6; }
-#legend-overlay { background: rgba(0,0,0,0.85); display: none; cursor: pointer; }
-
-.story-box { background: rgba(255,255,255,0.05); min-height: 200px; border: 1px dashed #444; padding: 15px; color: #ddd; outline: none; font-size: 0.9rem; }
-.nav-item { padding: 8px; font-size: 0.75rem; cursor: pointer; border-bottom: 1px solid #333; text-transform: uppercase; color: #888; }
-kbd { background: #333; color: var(--accent); padding: 2px 5px; border-radius: 3px; font-family: monospace; font-size: 0.8rem; }
-
-@media print {
-    #left-sidebar, #right-sidebar, #auth-overlay, #legend-overlay { display: none !important; }
-    #main-editor { padding: 0; background: white; }
-    .paper-page { box-shadow: none; margin: 0; width: 8.5in; height: 11in; page-break-after: always; }
-}
+/* Scrollbar styling for the desk */
+#main-editor::-webkit-scrollbar { width: 8px; }
+#main-editor::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
