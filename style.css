@@ -104,3 +104,24 @@ body {
         font-size: 12pt;
     }
 }
+/* Ensure the paper remains centered in its column */
+.col-md-10 {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Make the sidebar look distinct */
+.card-header h6 {
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.list-group-item {
+    border: none;
+    padding: 5px 10px;
+}
+
+/* Highlight the active mode visually in the help box? 
+   (Optional: We can add JS later to highlight the current line's mode) */
