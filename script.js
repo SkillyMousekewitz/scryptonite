@@ -55,4 +55,68 @@ editor.addEventListener('keydown', function(e) {
             }
         }, 10);
     }
+
+    const suggestionMenu = document.getElementById('character-suggestions');
+
+// Function to get all unique character names in the script
+function getExistingCharacters() {
+    const characterElements = document.querySelectorAll('.character');
+    const names = new Set();
+    characterElements.forEach(el => {
+        const name = el.innerText.trim().toUpperCase();
+        if (name) names.add(name);
+    });
+    return Array.from(names);
+}
+
+editor.addEventListener('input', (e) => {
+    const selection = window.getSelection();
+    const currentElement = selection.anchorNode.parentElement.closest('p');
+
+    // Only show suggestions if we are in a 'character' block
+    if (currentElement && currentElement.classList.contains('character')) {
+        const query = currentElement.innerText.trim().toUpperCase();
+        const characters = getExistingCharacters();
+        const matches = characters.filter(char => char.startsWith(query) && char !== query);
+
+        if (matches.length > 0 && query.length > 0) {
+            showSuggestions(matches, currentElement);
+        } else {
+            suggestionMenu.style.display = 'none';
+        }
+    } else {
+        suggestionMenu.style.display = 'none';
+    }
+});
+
+function showSuggestions(matches, targetEl) {
+    suggestionMenu.innerHTML = '';
+    
+    // Position the menu below the current line
+    const rect = targetEl.getBoundingClientRect();
+    suggestionMenu.style.top = `${rect.bottom + window.scrollY}px`;
+    suggestionMenu.style.left = `${rect.left + window.scrollX}px`;
+    suggestionMenu.style.display = 'block';
+
+    matches.forEach(name => {
+        const item = document.createElement('button');
+        item.classList.add('list-group-item', 'list-group-item-action', 'py-1');
+        item.innerText = name;
+        item.onclick = () => {
+            targetEl.innerText = name;
+            suggestionMenu.style.display = 'none';
+            // Move cursor to end of the name
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.setStart(targetEl.childNodes[0], name.length);
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        };
+        suggestionMenu.appendChild(item);
+    });
+}
+
+// Close menu if clicking elsewhere
+document.addEventListener('click', () => suggestionMenu.style.display = 'none');
 });
