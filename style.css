@@ -1,21 +1,31 @@
 /* style.css */
 @import url('https://fonts.googleapis.com/css2?family=Courier+Prime&display=swap');
 
+/* --- 1. SCREEN DISPLAY STYLES --- */
+body {
+    background-color: #f8f9fa;
+}
+
 .paper {
     width: 8.5in;
     min-height: 11in;
-    padding: 1in 1in 1in 1.5in; /* Standard 1.5" left margin for binding */
-    margin: 0 auto;
+    padding: 1in 1in 1in 1.5in; /* 1.5" left margin for binding hole-punches */
+    margin: 2in auto;
     background: white;
     font-family: 'Courier Prime', 'Courier New', Courier, monospace;
     font-size: 12pt;
     line-height: 1.2;
     outline: none;
     white-space: pre-wrap;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    position: relative;
 }
 
 /* Script Element Formatting */
-#editor p { margin-bottom: 0; min-height: 1em; }
+#editor p { 
+    margin-bottom: 0; 
+    min-height: 1em; 
+}
 
 .scene-heading { text-transform: uppercase; margin-top: 25px !important; font-weight: bold; }
 .action { margin-top: 12px !important; }
@@ -24,10 +34,31 @@
 .dialogue { width: 70%; margin-left: 1in !important; margin-bottom: 12px !important; }
 .transition { text-transform: uppercase; margin-left: 4.5in !important; margin-top: 12px !important; }
 
+/* Autocomplete UI Styles */
+#character-suggestions {
+    max-height: 200px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid #dee2e6;
+    font-family: sans-serif;
+    font-size: 14px;
+}
+
+.list-group-item.active-suggestion {
+    background-color: #0d6efd !important;
+    color: white !important;
+}
+
+/* --- 2. PRINT & PDF STYLES --- */
 @media print {
-    /* Hide the UI buttons when printing */
-    .no-print {
-        display: none !important;
+    @page {
+        size: letter;
+        margin: 0; /* Margins are handled by .paper padding */
+    }
+
+    /* Hide non-essential UI */
+    .no-print, #character-suggestions { 
+        display: none !important; 
     }
 
     body {
@@ -37,16 +68,39 @@
     }
 
     .paper {
+        width: 100% !important;
         box-shadow: none !important;
         border: none !important;
-        width: 100% !important;
         margin: 0 !important;
+        padding: 1in 1in 1in 1.5in !important;
     }
 
-    /* Standard Screenplay Page Breaking */
+    /* PAGE BREAK LOGIC */
     p {
-        orphans: 3;
-        widows: 3;
-        break-inside: avoid;
+        break-inside: avoid; /* Keeps dialogue blocks together */
+        orphans: 3; 
+        widows: 3;  
+    }
+
+    .scene-heading {
+        break-after: avoid; /* Prevents heading from being the last line on a page */
+    }
+
+    .character {
+        break-after: avoid; /* Keeps character name glued to the dialogue below */
+    }
+
+    /* Page Numbering */
+    body {
+        counter-reset: page;
+    }
+    .paper::after {
+        counter-increment: page;
+        content: counter(page) ".";
+        position: absolute;
+        top: 0.5in;
+        right: 0.5in;
+        font-family: 'Courier Prime', monospace;
+        font-size: 12pt;
     }
 }
