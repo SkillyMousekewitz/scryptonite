@@ -2,80 +2,85 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scryptonite | Screenwriter</title>
-    
-    <link rel="icon" href="data:,">
-
+    <title>SCRYPTONITE | Final Build</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <link rel="stylesheet" href="style.css">
-    
-    <style>
-        /* THE BULLETPROOF CSS OVERRIDE */
-        :root { --sidebar-width: 280px; --accent: #00cec9; --desk: #2d3436; }
-        body { margin: 0; display: flex; height: 100vh; width: 100vw; background: var(--desk); overflow: hidden; color: #b2bec3; }
-        
-        #left-sidebar { width: var(--sidebar-width); background: #1a1c1e; padding: 20px; border-right: 1px solid #111; flex-shrink: 0; display: flex; flex-direction: column; }
-        #main-editor { flex-grow: 1; overflow-y: auto; background: var(--desk); padding: 40px 0; display: flex; flex-direction: column; align-items: center; }
 
-        /* THE WHITE PAPER - FORCED VISIBILITY */
+    <style>
+        :root { --desk: #2d3436; --sidebar: #1a1c1e; --accent: #00cec9; }
+        body { margin: 0; display: flex; height: 100vh; background: var(--desk); overflow: hidden; }
+        #left-sidebar { width: 280px; background: var(--sidebar); color: #b2bec3; padding: 20px; border-right: 1px solid #111; display: flex; flex-direction: column; }
+        #main-editor { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; align-items: center; padding: 40px 0; }
+        
         .paper-page { 
-            display: block !important;
-            visibility: visible !important;
-            width: 8.5in !important; 
-            height: 11in !important; 
-            background-color: #ffffff !important; /* Pure White */
-            margin: 0 auto 30px auto !important;
-            padding: 1in 1in 1in 1.5in !important; 
-            box-shadow: 0 0 30px rgba(0,0,0,0.8) !important; 
-            font-family: 'Courier Prime', Courier, monospace !important; 
-            font-size: 12pt !important; 
-            color: #000000 !important; /* Black Text */
-            outline: none !important;
-            box-sizing: border-box !important;
-            position: relative !important;
+            display: block !important; background-color: white !important; width: 8.5in !important; height: 11in !important; 
+            margin: 0 auto 30px auto; padding: 1in 1in 1in 1.5in; box-shadow: 0 0 30px rgba(0,0,0,0.8); 
+            font-family: 'Courier Prime', monospace; font-size: 12pt; color: #000; outline: none; box-sizing: border-box; 
         }
 
         .line { min-height: 1.2em; width: 100%; outline: none; margin: 0; }
         .scene-heading { text-transform: uppercase; font-weight: bold; margin-top: 20px; }
-        
         #auth-overlay { position: fixed; inset: 0; z-index: 9999; background: #f4f7f6; display: flex; align-items: center; justify-content: center; }
-        #legend-overlay { position: fixed; inset: 0; z-index: 9998; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; cursor: pointer; }
     </style>
 </head>
 <body>
-
     <div id="auth-overlay">
-        <div class="card p-5 shadow text-center" style="width: 400px; border-radius: 20px; color: #333;">
+        <div class="card p-5 text-center" style="width: 400px; border-radius: 20px;">
             <h1 style="font-weight: 800;">SCRYPT<span style="color:var(--accent)">ONITE</span></h1>
             <button id="login-btn" class="btn btn-dark w-100 py-3 mt-4">Sign in with Google</button>
-        </div>
-    </div>
-
-    <div id="legend-overlay">
-        <div class="card bg-dark text-white p-4" style="width: 400px;">
-            <h5>COMMANDS</h5>
-            <p>Tab: Cycle Element<br>Enter: New Line<br>Ctrl + /: Help</p>
         </div>
     </div>
 
     <div id="left-sidebar">
         <h6 class="small text-muted">SCENES</h6>
         <div id="scene-list" class="flex-grow-1"></div>
-        <button class="btn btn-outline-info btn-sm mb-2" id="help-btn">Help</button>
-        <button class="btn btn-success btn-sm mb-2" id="pdf-btn">Export PDF</button>
-        <button class="btn btn-link btn-sm text-danger" id="logout-btn">Sign Out</button>
+        <button class="btn btn-success btn-sm w-100" id="pdf-btn">Export PDF</button>
     </div>
 
     <div id="main-editor">
-        <div class="paper-page" contenteditable="true" id="first-page">
-            <div class="line scene-heading" data-type="scene-heading">INT. STARTING POINT - DAY</div>
-            <div class="line action" data-type="action">Begin typing...</div>
+        <div class="paper-page" contenteditable="true">
+            <div class="line scene-heading" data-type="scene-heading">INT. FINAL CHAPTER - DAY</div>
+            <div class="line action" data-type="action">The screen is white. The code is clean.</div>
         </div>
     </div>
 
-    <script type="module" src="script.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCMJ8mkBdyhLDbC6RmaVK9zWl-XSms6RoA",
+            authDomain: "scryptonite-6a340.firebaseapp.com",
+            projectId: "scryptonite-6a340",
+            storageBucket: "scryptonite-6a340.firebasestorage.app",
+            messagingSenderId: "875468928578",
+            appId: "1:875468928578:web:524ae574d4c84593a49fdb"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+        const editor = document.getElementById('main-editor');
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById('auth-overlay').style.display = 'none';
+                onSnapshot(doc(db, "scripts", user.uid), (snap) => {
+                    if (snap.exists() && !editor.contains(document.activeElement)) {
+                        editor.innerHTML = snap.data().content || editor.innerHTML;
+                    }
+                });
+            }
+        });
+
+        document.getElementById('login-btn').onclick = () => signInWithPopup(auth, provider);
+        document.getElementById('pdf-btn').onclick = () => html2pdf().from(editor).save();
+        editor.addEventListener('input', () => {
+            if (auth.currentUser) setDoc(doc(db, "scripts", auth.currentUser.uid), { content: editor.innerHTML }, { merge: true });
+        });
+    </script>
 </body>
 </html>
