@@ -24,9 +24,29 @@
 .dialogue { width: 70%; margin-left: 1in !important; margin-bottom: 12px !important; }
 .transition { text-transform: uppercase; margin-left: 4.5in !important; margin-top: 12px !important; }
 
-/* Pagination Logic */
 @media print {
-    body { background: none; }
-    .paper { box-shadow: none; margin: 0; }
-    p { break-inside: avoid; } /* Prevents splitting a block across pages */
+    /* Hide the UI buttons when printing */
+    .no-print {
+        display: none !important;
+    }
+
+    body {
+        background-color: white !important;
+        margin: 0;
+        padding: 0;
+    }
+
+    .paper {
+        box-shadow: none !important;
+        border: none !important;
+        width: 100% !important;
+        margin: 0 !important;
+    }
+
+    /* Standard Screenplay Page Breaking */
+    p {
+        orphans: 3;
+        widows: 3;
+        break-inside: avoid;
+    }
 }
